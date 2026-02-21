@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Globe, Shield, Headphones, ArrowRight, Camera } from "lucide-react";
 
 import product1 from "@/assets/product-1.jpg";
@@ -16,9 +17,27 @@ const trustBadges = [
 
 const productGrid = [
   { image: image1, label: "Newcomers", isMain: true },
-  { image: image2, hoverImage: product1, label: null, comingSoon: true },
-  { image: image3, hoverImage: product3, label: null, comingSoon: false },
-  { image: product4, hoverImage: product2, label: null, comingSoon: true },
+  {
+    image: image2,
+    hoverImage: product1,
+    label: null,
+    comingSoon: true,
+    swatches: ["bg-violet-700", "bg-black"],
+  },
+  {
+    image: image3,
+    hoverImage: product3,
+    label: null,
+    comingSoon: false,
+    swatches: ["bg-zinc-800", "bg-neutral-200 border border-border"],
+  },
+  {
+    image: product4,
+    hoverImage: product2,
+    label: null,
+    comingSoon: true,
+    swatches: ["bg-indigo-600", "bg-black"],
+  },
 ];
 
 const communityImages = [
@@ -52,6 +71,12 @@ const footerColumns = [
 ];
 
 export default function Sections() {
+  const [selectedVariants, setSelectedVariants] = useState<Record<number, 0 | 1>>({
+    1: 0,
+    2: 0,
+    3: 0,
+  });
+
   return (
     <>
       {/* PRODUCT GRID - NEWCOMERS */}
@@ -60,14 +85,14 @@ export default function Sections() {
         {productGrid.map((item, i) => (
           <a key={i} href="#" className="group relative h-[240px] sm:h-[360px] md:h-[460px] overflow-hidden block">
             <img
-              src={item.image}
+              src={item.hoverImage && selectedVariants[i] === 1 ? item.hoverImage : item.image}
               alt={item.label || "Product"}
               className={`w-full h-full object-cover transition-opacity duration-400 ${item.hoverImage ? "group-hover:opacity-0" : ""}`}
               loading="lazy"
             />
             {item.hoverImage && (
               <img
-                src={item.hoverImage}
+                src={selectedVariants[i] === 1 ? item.image : item.hoverImage}
                 alt="Alternate product view"
                 className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-400 group-hover:opacity-100"
                 loading="lazy"
@@ -81,17 +106,47 @@ export default function Sections() {
                 <h3 className="text-2xl md:text-3xl font-bold tracking-normal normal-case text-primary-foreground mb-4">
                   Newcomers
                 </h3>
-                <span className="btn-outline border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-foreground text-[10px]">
+                <span className="inline-flex items-center gap-2 text-sm uppercase tracking-[0.12em] underline underline-offset-4 hover:opacity-70 transition-opacity text-primary-foreground">
                   See all
+                  <ArrowRight className="w-4 h-4" />
                 </span>
               </div>
             )}
 
             {/* Coming soon badge */}
             {item.comingSoon && (
-              <span className="absolute top-3 left-3 bg-foreground text-background text-[9px] tracking-[0.15em] uppercase font-medium px-3 py-1">
+              <span className="absolute top-3 left-3 bg-background text-foreground text-[9px] tracking-[0.15em] uppercase font-medium px-3 py-1 rounded-[10px]">
                 Coming Soon
               </span>
+            )}
+
+            {item.swatches && (
+              <div className="absolute bottom-3 right-3 flex items-center">
+                <button
+                  type="button"
+                  aria-label="Select first color"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedVariants((prev) => ({ ...prev, [i]: 0 }));
+                  }}
+                  className={`relative z-10 w-5 h-5 rounded-full ${item.swatches[0]} ring-1 ring-background/70 ${
+                    selectedVariants[i] === 0 ? "scale-110" : "opacity-90"
+                  } transition-all`}
+                />
+                <button
+                  type="button"
+                  aria-label="Select second color"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedVariants((prev) => ({ ...prev, [i]: 1 }));
+                  }}
+                  className={`-ml-2 w-5 h-5 rounded-full ${item.swatches[1]} ring-1 ring-background/70 ${
+                    selectedVariants[i] === 1 ? "scale-110 z-20" : "opacity-90"
+                  } transition-all`}
+                />
+              </div>
             )}
           </a>
         ))}
