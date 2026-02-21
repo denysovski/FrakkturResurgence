@@ -10,23 +10,22 @@ import product4 from "@/assets/product-4.jpg";
 import logoInvert from "@/assets/frakktur-icon-invert.png";
 
 const primaryMenuLinks = [
-  { label: "T-shirts", href: "#" },
-  { label: "Accessories", href: "#" },
-  { label: "Hoodies", href: "#" },
-  { label: "Caps", href: "#" },
-  { label: "Hats", href: "#" },
-  { label: "Belts", href: "#" },
-  { label: "Shoes", href: "#" },
-  { label: "Pants", href: "#" },
-  { label: "Knitwear", href: "#" },
-  { label: "Leather Jackets", href: "#" },
+  { label: "T-shirts", href: "/collections/tshirts" },
+  { label: "Hoodies", href: "/collections/hoodies" },
+  { label: "Caps", href: "/collections/caps" },
+  { label: "Hats", href: "/collections/hats" },
+  { label: "Belts", href: "/collections/belts" },
+  { label: "Shoes", href: "/collections/shoes" },
+  { label: "Pants", href: "/collections/pants" },
+  { label: "Knitwear", href: "/collections/knitwear" },
+  { label: "Leather Jackets", href: "/collections/leather-jackets" },
 ];
 
 const secondaryMenuLinks = [
-  { label: "Login / Register", href: "#" },
-  { label: "Frakktur Club", href: "#" },
-  { label: "About Us", href: "#" },
-  { label: "Sustainability program", href: "#" },
+  { label: "Login / Register", href: "/auth/login" },
+  { label: "Frakktur Club", href: "/club" },
+  { label: "About Us", href: "/about" },
+  { label: "Sustainability program", href: "/sustainability" },
 ];
 
 const latestProducts = [
@@ -175,30 +174,32 @@ export default function Navbar({
             </div>
             <div className="flex flex-col px-6 py-8 gap-4">
               {primaryMenuLinks.map((link, index) => (
-                <a
+                <Link
                   key={link.label}
-                  href={link.href}
+                  to={link.href}
+                  onClick={closeMenu}
                   style={{ transitionDelay: `${index * 40}ms` }}
                   className={`text-sm tracking-normal normal-case font-normal hover:opacity-60 transition-all duration-200 ${
                     menuOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
                   }`}
                 >
                   {link.label}
-                </a>
+                </Link>
               ))}
             </div>
             <div className="mt-auto px-6 py-6 border-t border-border flex flex-col gap-3">
               {secondaryMenuLinks.map((link, index) => (
-                <a
+                <Link
                   key={link.label}
-                  href={link.href}
+                  to={link.href}
+                  onClick={closeMenu}
                   style={{ transitionDelay: `${(primaryMenuLinks.length + index) * 40}ms` }}
                   className={`text-xs tracking-normal normal-case text-muted-foreground hover:text-foreground transition-all duration-200 ${
                     menuOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
                   }`}
                 >
                   {link.label}
-                </a>
+                </Link>
               ))}
             </div>
           </nav>

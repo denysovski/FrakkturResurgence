@@ -6,6 +6,17 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
+// Collection pages
+import TshirtsPage from "./pages/collections/TshirtsPage";
+import HoodiesPage from "./pages/collections/HoodiesPage";
+import CapsPage from "./pages/collections/CapsPage";
+import HatsPage from "./pages/collections/HatsPage";
+import BeltsPage from "./pages/collections/BeltsPage";
+import ShoesPage from "./pages/collections/ShoesPage";
+import PantsPage from "./pages/collections/PantsPage";
+import KnitwearPage from "./pages/collections/KnitwearPage";
+import LeatherJacketsPage from "./pages/collections/LeatherJacketsPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -16,6 +27,18 @@ const App = () => (
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           <Route path="/" element={<Index />} />
+          
+          {/* Collections */}
+          <Route path="/collections/tshirts" element={<TshirtsPage />} />
+          <Route path="/collections/hoodies" element={<HoodiesPage />} />
+          <Route path="/collections/caps" element={<CapsPage />} />
+          <Route path="/collections/hats" element={<HatsPage />} />
+          <Route path="/collections/belts" element={<BeltsPage />} />
+          <Route path="/collections/shoes" element={<ShoesPage />} />
+          <Route path="/collections/pants" element={<PantsPage />} />
+          <Route path="/collections/knitwear" element={<KnitwearPage />} />
+          <Route path="/collections/leather-jackets" element={<LeatherJacketsPage />} />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
