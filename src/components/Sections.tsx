@@ -56,7 +56,7 @@ export default function Sections() {
     <>
       {/* PRODUCT GRID - NEWCOMERS */}
       <section className="px-6 pt-10 md:px-10 md:pt-10 pb-0">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-[10px]">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-[5px]">
         {productGrid.map((item, i) => (
           <a key={i} href="#" className="group relative h-[240px] sm:h-[360px] md:h-[460px] overflow-hidden block">
             <img
@@ -78,7 +78,7 @@ export default function Sections() {
             {/* Main card: Newcomers overlay */}
             {item.isMain && (
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <h3 className="text-2xl md:text-3xl font-bold tracking-wide uppercase text-primary-foreground mb-4">
+                <h3 className="text-2xl md:text-3xl font-bold tracking-normal normal-case text-primary-foreground mb-4">
                   Newcomers
                 </h3>
                 <span className="btn-outline border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-foreground text-[10px]">
@@ -101,12 +101,12 @@ export default function Sections() {
       {/* COMMUNITY HUB */}
       <section className="py-10 md:py-14 px-6 md:px-10 bg-background">
         <div className="mb-8">
-          <h2 className="section-heading mb-2 text-left">Community hub</h2>
+          <h2 className="section-heading normal-case tracking-normal mb-2 text-left">Community hub</h2>
           <p className="text-sm text-muted-foreground text-left">
             Tag us at @distopion to get featured on our website!
           </p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-[10px]">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px]">
           {communityImages.map((item, i) => (
             <a key={i} href="#" className="group relative aspect-[9/16] overflow-hidden block">
               <img
@@ -147,7 +147,7 @@ export default function Sections() {
       <section className="py-14 md:py-16 px-6 md:px-10 bg-secondary">
         <div className="max-w-3xl">
           <p className="micro-text text-muted-foreground mb-3">Members only</p>
-          <h2 className="section-heading mb-3 text-left">Join Frakktur Club</h2>
+          <h2 className="section-heading normal-case tracking-normal mb-3 text-left">Join Frakktur Club</h2>
           <p className="text-sm text-muted-foreground max-w-xl leading-relaxed text-left">
             Register, earn points & rewards on all purchases. Redeem exclusive offers and discounts.
           </p>

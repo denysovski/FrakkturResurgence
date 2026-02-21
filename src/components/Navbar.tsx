@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Menu, Search, User, X, Heart, ShoppingBag } from "lucide-react";
+import { Menu, Search, User, X, Heart, ShoppingBag, ChevronUp, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import product1 from "@/assets/product-1.jpg";
@@ -21,14 +21,23 @@ const latestProducts = [
   { name: "Crossbody Bag", price: "€65.00", image: product4 },
 ];
 
+const localeOptions = [
+  { code: "USD", country: "United States", flag: "https://flagcdn.com/w40/us.png" },
+  { code: "EUR", country: "European Union", flag: "https://flagcdn.com/w40/eu.png" },
+  { code: "GBP", country: "United Kingdom", flag: "https://flagcdn.com/w40/gb.png" },
+  { code: "CAD", country: "Canada", flag: "https://flagcdn.com/w40/ca.png" },
+];
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
-  const [currency, setCurrency] = useState<"EUR" | "USD">("EUR");
+  const [localeOpen, setLocaleOpen] = useState(false);
+  const [selectedLocale, setSelectedLocale] = useState(localeOptions[0]);
   const lastScrollY = useRef(0);
+  const localeMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const onScroll = () => {
@@ -48,6 +57,20 @@ export default function Navbar() {
     }
   }, [menuOpen, menuVisible]);
 
+  useEffect(() => {
+    if (!localeOpen) return;
+
+    const onDocClick = (event: MouseEvent) => {
+      if (!localeMenuRef.current) return;
+      if (!localeMenuRef.current.contains(event.target as Node)) {
+        setLocaleOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [localeOpen]);
+
   const openMenu = () => {
     setMenuVisible(true);
     requestAnimationFrame(() => setMenuOpen(true));
@@ -57,11 +80,10 @@ export default function Navbar() {
     setMenuOpen(false);
   };
 
-  const currencyLabel = currency === "EUR" ? "EUR" : "USD";
-  const currencyFlag = currency === "EUR" ? "🇪🇺" : "🇺🇸";
+  const navItemColor = scrolled ? "text-foreground" : "text-primary-foreground";
 
-  const toggleCurrency = () => {
-    setCurrency((prev) => (prev === "EUR" ? "USD" : "EUR"));
+  const toggleLocaleMenu = () => {
+    setLocaleOpen((prev) => !prev);
   };
 
   return (
@@ -72,9 +94,14 @@ export default function Navbar() {
         } ${scrolled ? "bg-background/95 backdrop-blur-sm shadow-sm" : "bg-transparent"}`}
       >
         <div className="flex items-center justify-between px-6 py-4">
-          <button onClick={openMenu} className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Open menu">
+          <button
+            onClick={openMenu}
+            className={`p-1 transition-transform duration-200 hover:scale-110 ${navItemColor}`}
+            aria-label="Open menu"
+          >
             <Menu className="w-5 h-5" />
           </button>
+
           <Link to="/" className="absolute left-1/2 -translate-x-1/2">
             <img
               src={logoInvert}
@@ -82,22 +109,61 @@ export default function Navbar() {
               className={`h-8 md:h-9 w-auto transition-all duration-300 ${scrolled ? "invert" : ""}`}
             />
           </Link>
-          <div className="flex items-center gap-4">
+
+          <div className={`flex items-center gap-4 ${navItemColor}`}>
+            <div ref={localeMenuRef} className="relative hidden sm:flex items-center gap-2">
+              <button
+                onClick={toggleLocaleMenu}
+                className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+                aria-label="Open language menu"
+              >
+                <img src={selectedLocale.flag} alt={selectedLocale.country} className="h-4 w-6 object-cover rounded-sm" />
+                {localeOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+
+              <button
+                onClick={toggleLocaleMenu}
+                className="flex items-center gap-1 text-sm hover:opacity-70 transition-opacity"
+                aria-label="Open currency menu"
+              >
+                <span>{selectedLocale.code}</span>
+                {localeOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+
+              {localeOpen && (
+                <div className="absolute top-full right-0 mt-3 w-56 bg-background text-foreground border border-border shadow-sm z-[70]">
+                  {localeOptions.map((option) => (
+                    <button
+                      key={option.code}
+                      onClick={() => {
+                        setSelectedLocale(option);
+                        setLocaleOpen(false);
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors"
+                    >
+                      <span className="flex items-center gap-2 text-sm">
+                        <img src={option.flag} alt={option.country} className="h-4 w-6 object-cover rounded-sm" />
+                        {option.country}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{option.code}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button
-              onClick={toggleCurrency}
-              className="hidden sm:flex items-center gap-1 text-xs tracking-[0.1em] uppercase hover:opacity-70 transition-opacity"
-              aria-label="Switch currency"
+              onClick={() => setSearchOpen(true)}
+              className="p-1 transition-transform duration-200 hover:scale-110"
+              aria-label="Search"
             >
-              <span>{currencyFlag}</span>
-              <span>{currencyLabel}</span>
-            </button>
-            <button onClick={() => setSearchOpen(true)} className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Search">
               <Search className="w-5 h-5" />
             </button>
-            <a href="#" className="hidden md:flex items-center gap-2 text-xs tracking-[0.1em] uppercase hover:opacity-70 transition-opacity" aria-label="Login">
-              <User className="w-4 h-4" />
-              <span>Log in</span>
+
+            <a href="#" className="hidden md:block p-1 transition-transform duration-200 hover:scale-110" aria-label="Login">
+              <User className="w-5 h-5" />
             </a>
+
             <a href="#" className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Shopping cart">
               <ShoppingBag className="w-5 h-5" />
             </a>
@@ -105,7 +171,6 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* LEFT MENU */}
       {menuVisible && (
         <div className="fixed inset-0 z-[60]" onClick={closeMenu}>
           <div
@@ -121,7 +186,9 @@ export default function Navbar() {
           >
             <div className="flex items-center justify-between px-6 py-5 border-b border-border">
               <span className="text-xs tracking-[0.15em] uppercase font-medium">Menu</span>
-              <button onClick={closeMenu} aria-label="Close menu"><X className="w-5 h-5" /></button>
+              <button onClick={closeMenu} aria-label="Close menu">
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <div className="flex flex-col px-6 py-8 gap-6">
               {menuLinks.map((link, index) => (
@@ -151,23 +218,34 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* RIGHT SEARCH */}
       {searchOpen && (
         <div className="fixed inset-0 z-[60]" onClick={() => setSearchOpen(false)}>
           <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" />
-          <aside className="absolute right-0 top-0 bottom-0 w-96 max-w-[90vw] bg-background animate-slide-in-right flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <aside
+            className="absolute right-0 top-0 bottom-0 w-96 max-w-[90vw] bg-background animate-slide-in-right flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-6 py-5 border-b border-border">
               <span className="text-xs tracking-[0.15em] uppercase font-medium">Search</span>
-              <button onClick={() => setSearchOpen(false)} aria-label="Close search"><X className="w-5 h-5" /></button>
+              <button onClick={() => setSearchOpen(false)} aria-label="Close search">
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <div className="px-6 py-4 border-b border-border">
               <div className="flex items-center gap-3">
                 <Search className="w-4 h-4 text-muted-foreground" />
-                <input type="text" placeholder="Search products..." className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" autoFocus />
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  autoFocus
+                />
               </div>
             </div>
             <div className="px-6 py-3 border-b border-border">
-              <button className="nav-link flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"><Heart className="w-4 h-4" /> Favourites</button>
+              <button className="nav-link flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+                <Heart className="w-4 h-4" /> Favourites
+              </button>
             </div>
             <div className="px-6 py-4 flex-1 overflow-y-auto">
               <p className="micro-text text-muted-foreground mb-4">Latest Products</p>
