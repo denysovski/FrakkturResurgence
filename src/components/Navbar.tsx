@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Menu, Search, User, X, Heart, ShoppingCart, ChevronUp, ChevronDown } from "lucide-react";
+import { Menu, Search, User, X, Heart, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
+import LocaleDropdown from "./LocaleDropdown";
 
 import product1 from "@/assets/product-1.jpg";
 import product2 from "@/assets/product-2.jpg";
@@ -59,11 +60,7 @@ export default function Navbar({
   const [searchOpen, setSearchOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
-  const [countryMenuOpen, setCountryMenuOpen] = useState(false);
-  const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
-  const countryMenuRef = useRef<HTMLDivElement | null>(null);
-  const currencyMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const onScroll = () => {
@@ -83,17 +80,6 @@ export default function Navbar({
     }
   }, [menuOpen, menuVisible]);
 
-  useEffect(() => {
-    const onDocClick = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (countryMenuRef.current && !countryMenuRef.current.contains(target)) setCountryMenuOpen(false);
-      if (currencyMenuRef.current && !currencyMenuRef.current.contains(target)) setCurrencyMenuOpen(false);
-    };
-
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
-
   const openMenu = () => {
     setMenuVisible(true);
     requestAnimationFrame(() => setMenuOpen(true));
@@ -103,21 +89,8 @@ export default function Navbar({
     setMenuOpen(false);
   };
 
-  const dropdownOpen = countryMenuOpen || currencyMenuOpen;
-  const navHasBackground = scrolled || dropdownOpen;
+  const navHasBackground = scrolled;
   const navItemColor = navHasBackground ? "text-foreground" : "text-primary-foreground";
-
-  const selectedCountryOption = countryOptions.find((country) => country.value === selectedCountry) || countryOptions[0];
-
-  const toggleCountryMenu = () => {
-    setCurrencyMenuOpen(false);
-    setCountryMenuOpen((prev) => !prev);
-  };
-
-  const toggleCurrencyMenu = () => {
-    setCountryMenuOpen(false);
-    setCurrencyMenuOpen((prev) => !prev);
-  };
 
   return (
     <>
@@ -144,69 +117,22 @@ export default function Navbar({
           </Link>
 
           <div className={`flex items-center gap-4 ${navItemColor}`}>
-            <div ref={countryMenuRef} className="relative hidden sm:flex items-center gap-2">
-              <button
-                onClick={toggleCountryMenu}
-                className="flex items-center gap-2 hover:opacity-70 transition-opacity"
-                aria-label="Open countries menu"
-              >
-                <img src={selectedCountryOption.flag} alt={selectedCountryOption.value} className="h-5 w-7 object-cover rounded-sm" />
-                {countryMenuOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-
-              <div
-                className={`absolute top-full right-0 mt-3 w-60 bg-background text-foreground border border-border shadow-sm z-[70] transition-all duration-200 origin-top-right ${
-                  countryMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-1 pointer-events-none"
-                }`}
-              >
-                  {countryOptions.map((country) => (
-                    <button
-                      key={country.value}
-                      onClick={() => {
-                        onCountryChange(country.value);
-                        setCountryMenuOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors text-xs tracking-[0.08em]"
-                    >
-                      <span className="flex items-center gap-2">
-                        <img src={country.flag} alt={country.value} className="h-4 w-6 object-cover rounded-sm" />
-                        {country.value}
-                      </span>
-                      {selectedCountry === country.value && <span>✓</span>}
-                    </button>
-                  ))}
-              </div>
+            <div className="relative hidden sm:flex items-center gap-2">
+              <LocaleDropdown
+                type="country"
+                options={countryOptions}
+                selected={selectedCountry}
+                onChange={onCountryChange}
+              />
             </div>
 
-            <div ref={currencyMenuRef} className="relative hidden sm:flex items-center gap-2">
-              <button
-                onClick={toggleCurrencyMenu}
-                className="flex items-center gap-1 text-sm hover:opacity-70 transition-opacity"
-                aria-label="Open currencies menu"
-              >
-                <span>{selectedCurrency}</span>
-                {currencyMenuOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-
-              <div
-                className={`absolute top-full right-0 mt-3 w-44 bg-background text-foreground border border-border shadow-sm z-[70] transition-all duration-200 origin-top-right ${
-                  currencyMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-1 pointer-events-none"
-                }`}
-              >
-                  {currencyOptions.map((currency, index) => (
-                    <button
-                      key={`${currency}-${index}`}
-                      onClick={() => {
-                        onCurrencyChange(currency);
-                        setCurrencyMenuOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors text-xs tracking-[0.08em]"
-                    >
-                      <span>{currency}</span>
-                      {selectedCurrency === currency && <span>✓</span>}
-                    </button>
-                  ))}
-              </div>
+            <div className="relative hidden sm:flex items-center gap-2">
+              <LocaleDropdown
+                type="currency"
+                options={currencyOptions}
+                selected={selectedCurrency}
+                onChange={onCurrencyChange}
+              />
             </div>
 
             <button

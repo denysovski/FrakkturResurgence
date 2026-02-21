@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Globe, Shield, Headphones, ArrowRight, Camera, Facebook, Instagram, Music2, Send, ChevronDown } from "lucide-react";
+import { Globe, Shield, Headphones, ArrowRight, Camera, Facebook, Instagram, Music2, Send } from "lucide-react";
+import LocaleDropdown from "./LocaleDropdown";
 
 import product1 from "@/assets/product-1.jpg";
 import product2 from "@/assets/product-2.jpg";
@@ -270,34 +271,18 @@ export default function Sections({
         </div>
         <div className="mt-10 pt-6 border-t border-border flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
-              <select
-                value={selectedCountry}
-                onChange={(e) => onCountryChange(e.target.value)}
-                className="appearance-none bg-background border border-border pl-2 pr-7 py-1.5 text-[11px] text-muted-foreground"
-              >
-                {countryOptions.map((country) => (
-                  <option key={country.value} value={country.value}>
-                    {country.value}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            </div>
-            <div className="relative">
-              <select
-                value={selectedCurrency}
-                onChange={(e) => onCurrencyChange(e.target.value)}
-                className="appearance-none bg-background border border-border pl-2 pr-7 py-1.5 text-[11px] text-muted-foreground"
-              >
-                {currencyOptions.map((currency, index) => (
-                  <option key={`${currency}-${index}`} value={currency}>
-                    {currency}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            </div>
+            <LocaleDropdown
+              type="country"
+              options={countryOptions}
+              selected={selectedCountry}
+              onChange={onCountryChange}
+            />
+            <LocaleDropdown
+              type="currency"
+              options={currencyOptions}
+              selected={selectedCurrency}
+              onChange={onCurrencyChange}
+            />
           </div>
 
           <div className="flex items-center gap-5 ml-auto">
