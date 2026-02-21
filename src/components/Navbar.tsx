@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Menu, Search, User, X, Heart, ShoppingBag, ChevronUp, ChevronDown } from "lucide-react";
+import { Menu, Search, User, X, Heart, ShoppingCart, ChevronUp, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import product1 from "@/assets/product-1.jpg";
@@ -8,10 +8,23 @@ import product3 from "@/assets/product-3.jpg";
 import product4 from "@/assets/product-4.jpg";
 import logoInvert from "@/assets/frakktur-icon-invert.png";
 
-const menuLinks = [
-  { label: "T-Shirts", href: "#" },
+const primaryMenuLinks = [
+  { label: "T-shirts", href: "#" },
   { label: "Accessories", href: "#" },
   { label: "Hoodies", href: "#" },
+  { label: "Caps", href: "#" },
+  { label: "Hats", href: "#" },
+  { label: "Belts", href: "#" },
+  { label: "Shoes", href: "#" },
+  { label: "Pants", href: "#" },
+  { label: "Knitwear", href: "#" },
+  { label: "Leather Jackets", href: "#" },
+];
+
+const secondaryMenuLinks = [
+  { label: "Frakktur Club", href: "#" },
+  { label: "About Us", href: "#" },
+  { label: "Sustainability program", href: "#" },
 ];
 
 const latestProducts = [
@@ -21,23 +34,35 @@ const latestProducts = [
   { name: "Crossbody Bag", price: "€65.00", image: product4 },
 ];
 
-const localeOptions = [
-  { code: "USD", country: "United States", flag: "https://flagcdn.com/w40/us.png" },
-  { code: "EUR", country: "European Union", flag: "https://flagcdn.com/w40/eu.png" },
-  { code: "GBP", country: "United Kingdom", flag: "https://flagcdn.com/w40/gb.png" },
-  { code: "CAD", country: "Canada", flag: "https://flagcdn.com/w40/ca.png" },
-];
+type CountryOption = { value: string; flag: string };
 
-export default function Navbar() {
+type NavbarProps = {
+  countryOptions: CountryOption[];
+  currencyOptions: string[];
+  selectedCountry: string;
+  selectedCurrency: string;
+  onCountryChange: (country: string) => void;
+  onCurrencyChange: (currency: string) => void;
+};
+
+export default function Navbar({
+  countryOptions,
+  currencyOptions,
+  selectedCountry,
+  selectedCurrency,
+  onCountryChange,
+  onCurrencyChange,
+}: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
-  const [localeOpen, setLocaleOpen] = useState(false);
-  const [selectedLocale, setSelectedLocale] = useState(localeOptions[0]);
+  const [countryMenuOpen, setCountryMenuOpen] = useState(false);
+  const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
-  const localeMenuRef = useRef<HTMLDivElement | null>(null);
+  const countryMenuRef = useRef<HTMLDivElement | null>(null);
+  const currencyMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const onScroll = () => {
@@ -58,18 +83,15 @@ export default function Navbar() {
   }, [menuOpen, menuVisible]);
 
   useEffect(() => {
-    if (!localeOpen) return;
-
     const onDocClick = (event: MouseEvent) => {
-      if (!localeMenuRef.current) return;
-      if (!localeMenuRef.current.contains(event.target as Node)) {
-        setLocaleOpen(false);
-      }
+      const target = event.target as Node;
+      if (countryMenuRef.current && !countryMenuRef.current.contains(target)) setCountryMenuOpen(false);
+      if (currencyMenuRef.current && !currencyMenuRef.current.contains(target)) setCurrencyMenuOpen(false);
     };
 
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
-  }, [localeOpen]);
+  }, []);
 
   const openMenu = () => {
     setMenuVisible(true);
@@ -80,10 +102,20 @@ export default function Navbar() {
     setMenuOpen(false);
   };
 
-  const navItemColor = scrolled ? "text-foreground" : "text-primary-foreground";
+  const dropdownOpen = countryMenuOpen || currencyMenuOpen;
+  const navHasBackground = scrolled || dropdownOpen;
+  const navItemColor = navHasBackground ? "text-foreground" : "text-primary-foreground";
 
-  const toggleLocaleMenu = () => {
-    setLocaleOpen((prev) => !prev);
+  const selectedCountryOption = countryOptions.find((country) => country.value === selectedCountry) || countryOptions[0];
+
+  const toggleCountryMenu = () => {
+    setCurrencyMenuOpen(false);
+    setCountryMenuOpen((prev) => !prev);
+  };
+
+  const toggleCurrencyMenu = () => {
+    setCountryMenuOpen(false);
+    setCurrencyMenuOpen((prev) => !prev);
   };
 
   return (
@@ -91,7 +123,7 @@ export default function Navbar() {
       <header
         className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
           visible ? "top-0" : "-top-20"
-        } ${scrolled ? "bg-background/95 backdrop-blur-sm shadow-sm" : "bg-transparent"}`}
+        } ${navHasBackground ? "bg-background/95 backdrop-blur-sm shadow-sm" : "bg-transparent"}`}
       >
         <div className="flex items-center justify-between px-6 py-4">
           <button
@@ -106,50 +138,74 @@ export default function Navbar() {
             <img
               src={logoInvert}
               alt="Frakktur"
-              className={`h-8 md:h-9 w-auto transition-all duration-300 ${scrolled ? "invert" : ""}`}
+              className={`h-8 md:h-9 w-auto transition-all duration-300 ${navHasBackground ? "invert" : ""}`}
             />
           </Link>
 
           <div className={`flex items-center gap-4 ${navItemColor}`}>
-            <div ref={localeMenuRef} className="relative hidden sm:flex items-center gap-2">
+            <div ref={countryMenuRef} className="relative hidden sm:flex items-center gap-2">
               <button
-                onClick={toggleLocaleMenu}
+                onClick={toggleCountryMenu}
                 className="flex items-center gap-2 hover:opacity-70 transition-opacity"
-                aria-label="Open language menu"
+                aria-label="Open countries menu"
               >
-                <img src={selectedLocale.flag} alt={selectedLocale.country} className="h-4 w-6 object-cover rounded-sm" />
-                {localeOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                <img src={selectedCountryOption.flag} alt={selectedCountryOption.value} className="h-5 w-7 object-cover rounded-sm" />
+                {countryMenuOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
 
-              <button
-                onClick={toggleLocaleMenu}
-                className="flex items-center gap-1 text-sm hover:opacity-70 transition-opacity"
-                aria-label="Open currency menu"
+              <div
+                className={`absolute top-full right-0 mt-3 w-60 bg-background text-foreground border border-border shadow-sm z-[70] transition-all duration-200 origin-top-right ${
+                  countryMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-1 pointer-events-none"
+                }`}
               >
-                <span>{selectedLocale.code}</span>
-                {localeOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-
-              {localeOpen && (
-                <div className="absolute top-full right-0 mt-3 w-56 bg-background text-foreground border border-border shadow-sm z-[70]">
-                  {localeOptions.map((option) => (
+                  {countryOptions.map((country) => (
                     <button
-                      key={option.code}
+                      key={country.value}
                       onClick={() => {
-                        setSelectedLocale(option);
-                        setLocaleOpen(false);
+                        onCountryChange(country.value);
+                        setCountryMenuOpen(false);
                       }}
-                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors"
+                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors text-xs tracking-[0.08em]"
                     >
-                      <span className="flex items-center gap-2 text-sm">
-                        <img src={option.flag} alt={option.country} className="h-4 w-6 object-cover rounded-sm" />
-                        {option.country}
+                      <span className="flex items-center gap-2">
+                        <img src={country.flag} alt={country.value} className="h-4 w-6 object-cover rounded-sm" />
+                        {country.value}
                       </span>
-                      <span className="text-xs text-muted-foreground">{option.code}</span>
+                      {selectedCountry === country.value && <span>✓</span>}
                     </button>
                   ))}
-                </div>
-              )}
+              </div>
+            </div>
+
+            <div ref={currencyMenuRef} className="relative hidden sm:flex items-center gap-2">
+              <button
+                onClick={toggleCurrencyMenu}
+                className="flex items-center gap-1 text-sm hover:opacity-70 transition-opacity"
+                aria-label="Open currencies menu"
+              >
+                <span>{selectedCurrency}</span>
+                {currencyMenuOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+
+              <div
+                className={`absolute top-full right-0 mt-3 w-44 bg-background text-foreground border border-border shadow-sm z-[70] transition-all duration-200 origin-top-right ${
+                  currencyMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-1 pointer-events-none"
+                }`}
+              >
+                  {currencyOptions.map((currency, index) => (
+                    <button
+                      key={`${currency}-${index}`}
+                      onClick={() => {
+                        onCurrencyChange(currency);
+                        setCurrencyMenuOpen(false);
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors text-xs tracking-[0.08em]"
+                    >
+                      <span>{currency}</span>
+                      {selectedCurrency === currency && <span>✓</span>}
+                    </button>
+                  ))}
+              </div>
             </div>
 
             <button
@@ -165,7 +221,7 @@ export default function Navbar() {
             </a>
 
             <a href="#" className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Shopping cart">
-              <ShoppingBag className="w-5 h-5" />
+              <ShoppingCart className="w-5 h-5" strokeWidth={1.5} />
             </a>
           </div>
         </div>
@@ -190,13 +246,13 @@ export default function Navbar() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="flex flex-col px-6 py-8 gap-6">
-              {menuLinks.map((link, index) => (
+            <div className="flex flex-col px-6 py-8 gap-4">
+              {primaryMenuLinks.map((link, index) => (
                 <a
                   key={link.label}
                   href={link.href}
                   style={{ transitionDelay: `${index * 40}ms` }}
-                  className={`text-2xl tracking-[0.1em] uppercase font-light hover:opacity-60 transition-all duration-200 ${
+                  className={`text-sm tracking-normal normal-case font-normal hover:opacity-60 transition-all duration-200 ${
                     menuOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
                   }`}
                 >
@@ -204,15 +260,19 @@ export default function Navbar() {
                 </a>
               ))}
             </div>
-            <div className="mt-auto px-6 py-8 border-t border-border flex flex-col gap-4">
-              <a
-                href="#"
-                className={`nav-link flex items-center gap-3 transition-all duration-200 ${
-                  menuOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
-                }`}
-              >
-                <User className="w-4 h-4" /> Login / Register
-              </a>
+            <div className="mt-auto px-6 py-6 border-t border-border flex flex-col gap-3">
+              {secondaryMenuLinks.map((link, index) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  style={{ transitionDelay: `${(primaryMenuLinks.length + index) * 40}ms` }}
+                  className={`text-xs tracking-normal normal-case text-muted-foreground hover:text-foreground transition-all duration-200 ${
+                    menuOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
+                  }`}
+                >
+                  {link.label}
+                </a>
+              ))}
             </div>
           </nav>
         </div>
