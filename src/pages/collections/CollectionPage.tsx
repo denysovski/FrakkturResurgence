@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Filter, ArrowUpDown, Grid2x2, Grid3x3, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, Sparkles, TrendingUp, Star, DollarSign, ChevronDown, ArrowDown, Grid2x2, Grid3x3, Type } from "lucide-react";
 
 interface CollectionProduct {
   id: string;
@@ -126,7 +126,7 @@ const CollectionPage = ({
                 }}
                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-secondary transition-colors flex items-center gap-3 ${sortBy === "newest" ? "bg-secondary" : ""}`}
               >
-                <span>🆕</span> Newest
+                <Sparkles className="w-4 h-4" /> Newest
               </button>
               <button
                 onClick={() => {
@@ -136,7 +136,7 @@ const CollectionPage = ({
                 }}
                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-secondary transition-colors flex items-center gap-3 ${sortBy === "popular" ? "bg-secondary" : ""}`}
               >
-                <span>⭐</span> Most Popular
+                <Star className="w-4 h-4" /> Most Popular
               </button>
               <button
                 onClick={() => {
@@ -146,7 +146,7 @@ const CollectionPage = ({
                 }}
                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-secondary transition-colors flex items-center gap-3 ${sortBy === "alphabetical" ? "bg-secondary" : ""}`}
               >
-                <span>🔤</span> Alphabetically
+                <Type className="w-4 h-4" /> Alphabetically
               </button>
               <button
                 onClick={() => {
@@ -156,7 +156,7 @@ const CollectionPage = ({
                 }}
                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-secondary transition-colors flex items-center gap-3 ${sortBy === "price-asc" ? "bg-secondary" : ""}`}
               >
-                <span>📈</span> Price: Low to High
+                <TrendingUp className="w-4 h-4" /> Price: Low to High
               </button>
               <button
                 onClick={() => {
@@ -166,7 +166,7 @@ const CollectionPage = ({
                 }}
                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-secondary transition-colors flex items-center gap-3 ${sortBy === "price-desc" ? "bg-secondary" : ""}`}
               >
-                <span>📉</span> Price: High to Low
+                <DollarSign className="w-4 h-4" /> Price: High to Low
               </button>
             </div>
           )}
