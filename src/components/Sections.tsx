@@ -9,6 +9,11 @@ import product4 from "@/assets/product-4.jpg";
 import image1 from "@/assets/image1.jpg";
 import image2 from "@/assets/image2.jpg";
 import image3 from "@/assets/image3.jpg";
+import image4 from "@/assets/image4.jpg";
+import image5 from "@/assets/image5.jpg";
+import image6 from "@/assets/image6.jpg";
+import image7 from "@/assets/image7.jpg";
+import image8 from "@/assets/image8.jpg";
 
 const trustBadges = [
   { icon: Globe, title: "Worldwide Delivery", desc: "Fast & tracked shipping to every country" },
@@ -45,11 +50,11 @@ const communityImages = [
   { image: image1, user: "@streetking" },
   { image: image2, user: "@urbangirl" },
   { image: image3, user: "@nightrider" },
-  { image: product1, user: "@darkstyle" },
-  { image: product2, user: "@distopion" },
-  { image: product3, user: "@citycore" },
-  { image: product4, user: "@streetfocus" },
-  { image: image1, user: "@nightline" },
+  { image: image4, user: "@darkstyle" },
+  { image: image5, user: "@distopion" },
+  { image: image6, user: "@citycore" },
+  { image: image7, user: "@streetfocus" },
+  { image: image8, user: "@nightline" },
 ];
 
 const footerColumns = [
