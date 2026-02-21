@@ -1,6 +1,8 @@
 import { Globe, Shield, Headphones, ArrowRight, Camera } from "lucide-react";
 
 import product1 from "@/assets/product-1.jpg";
+import product2 from "@/assets/product-2.jpg";
+import product3 from "@/assets/product-3.jpg";
 import product4 from "@/assets/product-4.jpg";
 import image1 from "@/assets/image1.png";
 import image2 from "@/assets/image2.jpg";
@@ -14,9 +16,9 @@ const trustBadges = [
 
 const productGrid = [
   { image: image1, label: "Newcomers", isMain: true },
-  { image: image2, label: null, comingSoon: true },
-  { image: image3, label: null, comingSoon: false },
-  { image: product4, label: null, comingSoon: true },
+  { image: image2, hoverImage: product1, label: null, comingSoon: true },
+  { image: image3, hoverImage: product3, label: null, comingSoon: false },
+  { image: product4, hoverImage: product2, label: null, comingSoon: true },
 ];
 
 const communityImages = [
@@ -24,6 +26,29 @@ const communityImages = [
   { image: image2, user: "@urbangirl" },
   { image: image3, user: "@nightrider" },
   { image: product1, user: "@darkstyle" },
+  { image: product2, user: "@distopion" },
+  { image: product3, user: "@citycore" },
+  { image: product4, user: "@streetfocus" },
+  { image: image1, user: "@nightline" },
+];
+
+const footerColumns = [
+  {
+    title: "Help and Contact",
+    links: ["Distopion Club", "My Account", "Track Order", "Get Help Now", "Shipping & Delivery", "Make a Return"],
+  },
+  {
+    title: "Company",
+    links: ["About us", "Reviews", "Climate program", "Terms of service", "Shipping policy", "Refund policy", "Privacy policy"],
+  },
+  {
+    title: "Social",
+    links: ["Facebook", "Instagram", "Tiktok"],
+  },
+  {
+    title: "Shop Collections",
+    links: ["Clothing", "Accessories", "Shoes"],
+  },
 ];
 
 export default function Sections() {
@@ -37,9 +62,17 @@ export default function Sections() {
             <img
               src={item.image}
               alt={item.label || "Product"}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className={`w-full h-full object-cover transition-opacity duration-400 ${item.hoverImage ? "group-hover:opacity-0" : ""}`}
               loading="lazy"
             />
+            {item.hoverImage && (
+              <img
+                src={item.hoverImage}
+                alt="Alternate product view"
+                className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-400 group-hover:opacity-100"
+                loading="lazy"
+              />
+            )}
             <div className="absolute inset-0 bg-foreground/10 group-hover:bg-foreground/20 transition-colors duration-300" />
 
             {/* Main card: Newcomers overlay */}
@@ -73,13 +106,13 @@ export default function Sections() {
             Tag us at @distopion to get featured on our website!
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-[10px]">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-[10px]">
           {communityImages.map((item, i) => (
             <a key={i} href="#" className="group relative aspect-[9/16] overflow-hidden block">
               <img
                 src={item.image}
                 alt={`Community ${item.user}`}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                className="w-full h-full object-cover"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors duration-300 flex items-center justify-center">
@@ -149,21 +182,31 @@ export default function Sections() {
       </section>
 
       {/* FOOTER */}
-      <footer className="py-8 px-6 border-t border-border bg-background">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <h3 className="text-lg font-bold tracking-[0.15em] uppercase">Frakktur</h3>
-          <div className="flex gap-8">
-            <a href="#" className="nav-link text-muted-foreground hover:text-foreground transition-colors">T-Shirts</a>
-            <a href="#" className="nav-link text-muted-foreground hover:text-foreground transition-colors">Accessories</a>
-            <a href="#" className="nav-link text-muted-foreground hover:text-foreground transition-colors">Hoodies</a>
-          </div>
-          <div className="flex gap-6">
-            <a href="#" className="micro-text text-muted-foreground/60 hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="micro-text text-muted-foreground/60 hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="micro-text text-muted-foreground/60 hover:text-foreground transition-colors">Contact</a>
+      <footer className="pt-10 pb-6 px-6 md:px-10 border-t border-border bg-secondary/50">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-16">
+          {footerColumns.map((column) => (
+            <div key={column.title}>
+              <h4 className="text-sm font-medium mb-4">{column.title}</h4>
+              <ul className="space-y-3">
+                {column.links.map((link) => (
+                  <li key={link}>
+                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      {link}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div className="mt-10 pt-6 border-t border-border flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <p className="text-xs text-muted-foreground">© 2026 Frakktur. All rights reserved.</p>
+          <div className="flex items-center gap-5">
+            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms</a>
+            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
+            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Cookies</a>
           </div>
         </div>
-        <p className="text-center micro-text text-muted-foreground/40 mt-6">© 2026 Frakktur. All rights reserved.</p>
       </footer>
     </>
   );

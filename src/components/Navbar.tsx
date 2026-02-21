@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Menu, Search, User, X, Heart } from "lucide-react";
+import { Menu, Search, User, X, Heart, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import product1 from "@/assets/product-1.jpg";
@@ -23,9 +23,11 @@ const latestProducts = [
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
+  const [currency, setCurrency] = useState<"EUR" | "USD">("EUR");
   const lastScrollY = useRef(0);
 
   useEffect(() => {
@@ -39,6 +41,29 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    if (!menuOpen && menuVisible) {
+      const timeout = setTimeout(() => setMenuVisible(false), 220);
+      return () => clearTimeout(timeout);
+    }
+  }, [menuOpen, menuVisible]);
+
+  const openMenu = () => {
+    setMenuVisible(true);
+    requestAnimationFrame(() => setMenuOpen(true));
+  };
+
+  const closeMenu = () => {
+    setMenuOpen(false);
+  };
+
+  const currencyLabel = currency === "EUR" ? "EUR" : "USD";
+  const currencyFlag = currency === "EUR" ? "🇪🇺" : "🇺🇸";
+
+  const toggleCurrency = () => {
+    setCurrency((prev) => (prev === "EUR" ? "USD" : "EUR"));
+  };
+
   return (
     <>
       <header
@@ -47,7 +72,7 @@ export default function Navbar() {
         } ${scrolled ? "bg-background/95 backdrop-blur-sm shadow-sm" : "bg-transparent"}`}
       >
         <div className="flex items-center justify-between px-6 py-4">
-          <button onClick={() => setMenuOpen(true)} className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Open menu">
+          <button onClick={openMenu} className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Open menu">
             <Menu className="w-5 h-5" />
           </button>
           <Link to="/" className="absolute left-1/2 -translate-x-1/2">
@@ -58,32 +83,69 @@ export default function Navbar() {
             />
           </Link>
           <div className="flex items-center gap-4">
+            <button
+              onClick={toggleCurrency}
+              className="hidden sm:flex items-center gap-1 text-xs tracking-[0.1em] uppercase hover:opacity-70 transition-opacity"
+              aria-label="Switch currency"
+            >
+              <span>{currencyFlag}</span>
+              <span>{currencyLabel}</span>
+            </button>
             <button onClick={() => setSearchOpen(true)} className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Search">
               <Search className="w-5 h-5" />
             </button>
-            <a href="#" className="p-1 transition-transform duration-200 hover:scale-110 hidden md:block" aria-label="Login">
-              <User className="w-5 h-5" />
+            <a href="#" className="hidden md:flex items-center gap-2 text-xs tracking-[0.1em] uppercase hover:opacity-70 transition-opacity" aria-label="Login">
+              <User className="w-4 h-4" />
+              <span>Log in</span>
+            </a>
+            <a href="#" className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Shopping cart">
+              <ShoppingBag className="w-5 h-5" />
             </a>
           </div>
         </div>
       </header>
 
       {/* LEFT MENU */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-[60]" onClick={() => setMenuOpen(false)}>
-          <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" />
-          <nav className="absolute left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-background animate-slide-in-left flex flex-col" onClick={(e) => e.stopPropagation()}>
+      {menuVisible && (
+        <div className="fixed inset-0 z-[60]" onClick={closeMenu}>
+          <div
+            className={`absolute inset-0 bg-foreground/30 backdrop-blur-sm transition-opacity duration-200 ${
+              menuOpen ? "opacity-100" : "opacity-0"
+            }`}
+          />
+          <nav
+            className={`absolute left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-background flex flex-col transition-transform duration-200 ease-out ${
+              menuOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-6 py-5 border-b border-border">
               <span className="text-xs tracking-[0.15em] uppercase font-medium">Menu</span>
-              <button onClick={() => setMenuOpen(false)} aria-label="Close menu"><X className="w-5 h-5" /></button>
+              <button onClick={closeMenu} aria-label="Close menu"><X className="w-5 h-5" /></button>
             </div>
             <div className="flex flex-col px-6 py-8 gap-6">
-              {menuLinks.map((link) => (
-                <a key={link.label} href={link.href} className="text-2xl tracking-[0.1em] uppercase font-light hover:opacity-60 transition-opacity duration-300">{link.label}</a>
+              {menuLinks.map((link, index) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  style={{ transitionDelay: `${index * 40}ms` }}
+                  className={`text-2xl tracking-[0.1em] uppercase font-light hover:opacity-60 transition-all duration-200 ${
+                    menuOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
+                  }`}
+                >
+                  {link.label}
+                </a>
               ))}
             </div>
             <div className="mt-auto px-6 py-8 border-t border-border flex flex-col gap-4">
-              <a href="#" className="nav-link flex items-center gap-3"><User className="w-4 h-4" /> Login / Register</a>
+              <a
+                href="#"
+                className={`nav-link flex items-center gap-3 transition-all duration-200 ${
+                  menuOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
+                }`}
+              >
+                <User className="w-4 h-4" /> Login / Register
+              </a>
             </div>
           </nav>
         </div>
