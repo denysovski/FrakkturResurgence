@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import frakkturLogo from "@/assets/frakktur-logo.png";
 
 export default function NewsletterPopup() {
   const [open, setOpen] = useState(false);
@@ -45,6 +46,9 @@ export default function NewsletterPopup() {
 
         {!submitted ? (
           <>
+            <div className="flex justify-center mb-8">
+              <img src={frakkturLogo} alt="Frakktur" className="h-16 md:h-20 w-auto" />
+            </div>
             <h3 className="section-heading text-2xl md:text-3xl mb-2">Get 10% Off</h3>
             <p className="text-sm text-muted-foreground font-body mb-6">
               Subscribe to our newsletter and receive 10% off your first order. Stay updated with new drops and exclusive offers.
@@ -65,6 +69,9 @@ export default function NewsletterPopup() {
           </>
         ) : (
           <div className="text-center py-4">
+            <div className="flex justify-center mb-6">
+              <img src={frakkturLogo} alt="Frakktur" className="h-16 md:h-20 w-auto" />
+            </div>
             <h3 className="section-heading text-2xl mb-2">Welcome!</h3>
             <p className="text-sm text-muted-foreground font-body">
               Check your email for your exclusive 10% discount code.
