@@ -14,7 +14,7 @@ const LoginPage = () => {
   };
 
   return (
-    <PageLayout>
+    <PageLayout forceBlackNavbar={true}>
       <div className="pt-32 pb-24 px-6 md:px-10 min-h-[calc(100vh-200px)] flex items-center">
         <div className="w-full max-w-md mx-auto">
           <div className="mb-12">

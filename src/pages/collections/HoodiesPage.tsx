@@ -25,7 +25,7 @@ const hoodieProducts = [
 
 const HoodiesPage = () => {
   return (
-    <PageLayout>
+    <PageLayout forceBlackNavbar={true}>
       <CollectionPage
         title="Hoodies"
         description="Stylish and comfortable hoodies for every season. From classic designs to contemporary styles."

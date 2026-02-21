@@ -18,9 +18,10 @@ const currencyOptions = ["GBP", "USD", "CZK", "EUR", "EUR", "JPY", "CNY"];
 interface PageLayoutProps {
   children: React.ReactNode;
   showSections?: boolean;
+  forceBlackNavbar?: boolean; // Force black text in navbar for collection pages
 }
 
-const PageLayout = ({ children, showSections = false }: PageLayoutProps) => {
+const PageLayout = ({ children, showSections = false, forceBlackNavbar = false }: PageLayoutProps) => {
   const [selectedCountry, setSelectedCountry] = useState(countryOptions[0].value);
   const [selectedCurrency, setSelectedCurrency] = useState(currencyOptions[0]);
 
@@ -33,6 +34,7 @@ const PageLayout = ({ children, showSections = false }: PageLayoutProps) => {
         selectedCurrency={selectedCurrency}
         onCountryChange={setSelectedCountry}
         onCurrencyChange={setSelectedCurrency}
+        forceBlackText={forceBlackNavbar}
       />
       
       {children}

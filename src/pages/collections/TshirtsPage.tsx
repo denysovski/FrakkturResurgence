@@ -26,7 +26,7 @@ const tshirtProducts = [
 
 const TshirtsPage = () => {
   return (
-    <PageLayout>
+    <PageLayout forceBlackNavbar={true}>
       <CollectionPage
         title="T-Shirts"
         description="Discover our curated collection of premium t-shirts, from classic essentials to statement pieces."

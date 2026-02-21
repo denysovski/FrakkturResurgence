@@ -44,6 +44,7 @@ type NavbarProps = {
   selectedCurrency: string;
   onCountryChange: (country: string) => void;
   onCurrencyChange: (currency: string) => void;
+  forceBlackText?: boolean; // Force black text links on collection pages
 };
 
 export default function Navbar({
@@ -53,6 +54,7 @@ export default function Navbar({
   selectedCurrency,
   onCountryChange,
   onCurrencyChange,
+  forceBlackText = false,
 }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -90,14 +92,14 @@ export default function Navbar({
   };
 
   const navHasBackground = scrolled || dropdownOpen;
-  const navItemColor = navHasBackground ? "text-foreground" : "text-primary-foreground";
+  const navItemColor = forceBlackText ? "text-foreground" : (navHasBackground ? "text-foreground" : "text-primary-foreground");
 
   return (
     <>
       <header
         className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
           visible ? "top-0" : "-top-20"
-        } ${navHasBackground ? "bg-background/95 backdrop-blur-sm shadow-sm" : "bg-transparent"}`}
+        } ${forceBlackText || navHasBackground ? "bg-background/95 backdrop-blur-sm shadow-sm" : "bg-transparent"}`}
       >
         <div className="flex items-center justify-between px-6 py-4">
           <button
@@ -112,7 +114,7 @@ export default function Navbar({
             <img
               src={logoInvert}
               alt="Frakktur"
-              className={`h-8 md:h-9 w-auto transition-all duration-300 ${navHasBackground ? "invert" : ""}`}
+              className={`h-8 md:h-9 w-auto transition-all duration-300 ${forceBlackText || navHasBackground ? "invert" : ""}`}
             />
           </Link>
 

@@ -2,7 +2,7 @@ import PageLayout from "@/pages/PageLayout";
 
 const ClubPage = () => {
   return (
-    <PageLayout>
+    <PageLayout forceBlackNavbar={true}>
       <div className="pt-32 pb-24 px-6 md:px-10">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl font-light mb-4 tracking-tight">

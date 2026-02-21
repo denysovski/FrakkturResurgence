@@ -25,7 +25,7 @@ const knitwearProducts = [
 
 const KnitwearPage = () => {
   return (
-    <PageLayout>
+    <PageLayout forceBlackNavbar={true}>
       <CollectionPage
         title="Knitwear"
         description="Cozy and stylish knitwear collection. From wool sweaters to cable knits for every season."

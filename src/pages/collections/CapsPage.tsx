@@ -25,7 +25,7 @@ const capsProducts = [
 
 const CapsPage = () => {
   return (
-    <PageLayout>
+    <PageLayout forceBlackNavbar={true}>
       <CollectionPage
         title="Caps"
         description="Stylish caps for any occasion. From classic designs to modern interpretations of street style."

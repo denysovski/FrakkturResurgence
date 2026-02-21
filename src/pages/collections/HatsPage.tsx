@@ -25,7 +25,7 @@ const hatsProducts = [
 
 const HatsPage = () => {
   return (
-    <PageLayout>
+    <PageLayout forceBlackNavbar={true}>
       <CollectionPage
         title="Hats"
         description="Timeless hat collection for every style. Explore our range of beanies, bucket hats, and wide-brim styles."

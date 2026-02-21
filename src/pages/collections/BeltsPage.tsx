@@ -25,7 +25,7 @@ const beltsProducts = [
 
 const BeltsPage = () => {
   return (
-    <PageLayout>
+    <PageLayout forceBlackNavbar={true}>
       <CollectionPage
         title="Belts"
         description="Essential belts that combine style and functionality. From classic leather to contemporary designs."

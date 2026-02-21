@@ -92,6 +92,7 @@ const Footer = ({
             selected={selectedCountry}
             onChange={onCountryChange}
             position="top"
+            align="left"
           />
           <LocaleDropdown
             type="currency"
@@ -99,6 +100,7 @@ const Footer = ({
             selected={selectedCurrency}
             onChange={onCurrencyChange}
             position="top"
+            align="left"
           />
         </div>
 

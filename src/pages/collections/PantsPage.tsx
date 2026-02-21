@@ -25,7 +25,7 @@ const pantsProducts = [
 
 const PantsPage = () => {
   return (
-    <PageLayout>
+    <PageLayout forceBlackNavbar={true}>
       <CollectionPage
         title="Pants"
         description="Premium pants collection featuring jeans, cargo pants, and trousers for every occasion."

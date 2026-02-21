@@ -25,7 +25,7 @@ const shoesProducts = [
 
 const ShoesPage = () => {
   return (
-    <PageLayout>
+    <PageLayout forceBlackNavbar={true}>
       <CollectionPage
         title="Shoes"
         description="Step into style with our premium shoe collection. Discover sneakers and shoes designed for every moment."

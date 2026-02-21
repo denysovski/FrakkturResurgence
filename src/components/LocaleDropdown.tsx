@@ -14,6 +14,7 @@ interface LocaleDropdownProps {
   countryOptions?: CountryOption[]; // Only needed for currency dropdown to show flags
   position?: "top" | "bottom"; // Position of dropdown menu
   onOpenChange?: (isOpen: boolean) => void; // Notify parent when dropdown opens/closes
+  align?: "left" | "right"; // Alignment of dropdown menu
 }
 
 const LocaleDropdown = ({
@@ -24,6 +25,7 @@ const LocaleDropdown = ({
   countryOptions,
   position = "bottom",
   onOpenChange,
+  align = "right",
 }: LocaleDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -51,6 +53,8 @@ const LocaleDropdown = ({
 
   const selectedCountryOption = isCountryMode ? getSelectedCountryOption(selected) : undefined;
   const positionClass = position === "top" ? "bottom-full mb-3" : "top-full mt-3";
+  const alignClass = align === "left" ? "left-0" : "right-0";
+  const originClass = align === "left" ? (position === "top" ? "origin-bottom-left" : "origin-top-left") : (position === "top" ? "origin-bottom-right" : "origin-top-right");
 
   return (
     <div ref={menuRef} className="relative flex items-center gap-2">
@@ -79,9 +83,7 @@ const LocaleDropdown = ({
       </button>
 
       <div
-        className={`absolute right-0 ${positionClass} ${isCountryMode ? "w-60" : "w-44"} bg-background text-foreground border border-border shadow-sm z-[70] transition-all duration-200 ${
-          position === "top" ? "origin-bottom-right" : "origin-top-right"
-        } ${
+        className={`absolute ${alignClass} ${positionClass} ${isCountryMode ? "w-60" : "w-44"} bg-background text-foreground border border-border shadow-sm z-[70] transition-all duration-200 ${originClass} ${
           isOpen
             ? "opacity-100 translate-y-0 pointer-events-auto"
             : "opacity-0 -translate-y-1 pointer-events-none"

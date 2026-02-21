@@ -25,7 +25,7 @@ const jacketsProducts = [
 
 const LeatherJacketsPage = () => {
   return (
-    <PageLayout>
+    <PageLayout forceBlackNavbar={true}>
       <CollectionPage
         title="Leather Jackets"
         description="Premium leather jackets collection. Iconic styles that never go out of fashion."
