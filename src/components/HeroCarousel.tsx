@@ -1,0 +1,117 @@
+import { useState, useEffect, useCallback } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import hero1 from "@/assets/hero-1.jpg";
+import hero2 from "@/assets/hero-2.jpg";
+import hero3 from "@/assets/hero-3.jpg";
+
+const slides = [
+  {
+    image: hero1,
+    title: "New Collection",
+    subtitle: "Redefine your wardrobe",
+    desc: "Premium streetwear crafted for those who dare to stand out.",
+    cta: "Shop Now",
+    season: "Spring / Summer 2026",
+  },
+  {
+    image: hero2,
+    title: "Graphic Tees",
+    subtitle: "Bold statements, premium quality",
+    desc: "Each piece tells a story — hand-finished, limited edition prints.",
+    cta: "Explore",
+    season: "Limited Edition",
+  },
+  {
+    image: hero3,
+    title: "Street Culture",
+    subtitle: "Born from the underground",
+    desc: "Where art meets fashion. Designed for the fearless.",
+    cta: "Discover",
+    season: "Signature Series",
+  },
+];
+
+export default function HeroCarousel() {
+  const [current, setCurrent] = useState(0);
+  const [textKey, setTextKey] = useState(0);
+
+  const next = useCallback(() => {
+    setCurrent((prev) => (prev + 1) % slides.length);
+    setTextKey((k) => k + 1);
+  }, []);
+
+  const prev = useCallback(() => {
+    setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
+    setTextKey((k) => k + 1);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(next, 5000);
+    return () => clearInterval(interval);
+  }, [next]);
+
+  return (
+    <section className="relative w-full h-screen overflow-hidden">
+      {slides.map((slide, i) => (
+        <div
+          key={i}
+          className="absolute inset-0 fade-crossfade"
+          style={{ opacity: i === current ? 1 : 0 }}
+        >
+          <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
+        </div>
+      ))}
+
+      <div className="overlay-dark" />
+
+      {/* Season tag top-left */}
+      <div className="absolute top-24 left-6 md:left-16 z-10">
+        <p className="micro-text text-primary-foreground/50">{slides[current].season}</p>
+      </div>
+
+      {/* Text overlay - bottom left */}
+      <div key={textKey} className="absolute bottom-16 md:bottom-24 left-6 md:left-16 z-10 max-w-lg animate-fade-in-up">
+        <p className="micro-text text-primary-foreground/60 mb-3">
+          {slides[current].subtitle}
+        </p>
+        <h2 className="text-4xl md:text-6xl font-display font-semibold tracking-wide text-primary-foreground mb-3">
+          {slides[current].title}
+        </h2>
+        <p className="accent-text text-primary-foreground/70 mb-6">
+          {slides[current].desc}
+        </p>
+        <a href="#" className="btn-outline border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-foreground inline-block">
+          {slides[current].cta}
+        </a>
+      </div>
+
+      {/* Slide counter bottom-right */}
+      <div className="absolute bottom-16 md:bottom-24 right-6 md:right-16 z-10 flex flex-col items-end gap-4">
+        <p className="text-xs font-body text-primary-foreground/40 tracking-widest">
+          {String(current + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+        </p>
+        <div className="flex gap-3">
+          <button onClick={prev} className="w-10 h-10 border border-primary-foreground/40 flex items-center justify-center text-primary-foreground/70 hover:text-primary-foreground hover:border-primary-foreground transition-all duration-300" aria-label="Previous slide">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button onClick={next} className="w-10 h-10 border border-primary-foreground/40 flex items-center justify-center text-primary-foreground/70 hover:text-primary-foreground hover:border-primary-foreground transition-all duration-300" aria-label="Next slide">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Slide indicators */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => { setCurrent(i); setTextKey((k) => k + 1); }}
+            className={`h-[2px] transition-all duration-500 ${i === current ? "w-8 bg-primary-foreground" : "w-4 bg-primary-foreground/40"}`}
+            aria-label={`Go to slide ${i + 1}`}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
