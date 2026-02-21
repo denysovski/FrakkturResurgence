@@ -22,6 +22,7 @@ const primaryMenuLinks = [
 ];
 
 const secondaryMenuLinks = [
+  { label: "Login / Register", href: "#" },
   { label: "Frakktur Club", href: "#" },
   { label: "About Us", href: "#" },
   { label: "Sustainability program", href: "#" },
