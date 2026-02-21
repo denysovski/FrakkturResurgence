@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import hero1 from "@/assets/hero-1.jpg";
-import hero2 from "@/assets/hero-2.jpg";
-import hero3 from "@/assets/hero-3.jpg";
+import image1 from "@/assets/image1.png";
+import image2 from "@/assets/image2.jpg";
+import image3 from "@/assets/image3.png";
 
 const slides = [
   {
-    image: hero1,
+    image: image1,
     title: "New Collection",
     subtitle: "Redefine your wardrobe",
     desc: "Premium streetwear crafted for those who dare to stand out.",
@@ -15,7 +15,7 @@ const slides = [
     season: "Spring / Summer 2026",
   },
   {
-    image: hero2,
+    image: image2,
     title: "Graphic Tees",
     subtitle: "Bold statements, premium quality",
     desc: "Each piece tells a story — hand-finished, limited edition prints.",
@@ -23,7 +23,7 @@ const slides = [
     season: "Limited Edition",
   },
   {
-    image: hero3,
+    image: image3,
     title: "Street Culture",
     subtitle: "Born from the underground",
     desc: "Where art meets fashion. Designed for the fearless.",

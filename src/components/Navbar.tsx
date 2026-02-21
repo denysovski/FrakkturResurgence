@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, Search, User, X, Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import product1 from "@/assets/product-1.jpg";
 import product2 from "@/assets/product-2.jpg";
 import product3 from "@/assets/product-3.jpg";
 import product4 from "@/assets/product-4.jpg";
+import logoInvert from "@/assets/frakktur-icon-invert.png";
 
 const menuLinks = [
   { label: "T-Shirts", href: "#" },
@@ -48,9 +50,13 @@ export default function Navbar() {
           <button onClick={() => setMenuOpen(true)} className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Open menu">
             <Menu className="w-5 h-5" />
           </button>
-          <a href="/" className="absolute left-1/2 -translate-x-1/2">
-            <h1 className="text-xl md:text-2xl font-bold tracking-[0.3em] uppercase">FRAKKTUR</h1>
-          </a>
+          <Link to="/" className="absolute left-1/2 -translate-x-1/2">
+            <img
+              src={logoInvert}
+              alt="Frakktur"
+              className={`h-8 md:h-9 w-auto transition-all duration-300 ${scrolled ? "invert" : ""}`}
+            />
+          </Link>
           <div className="flex items-center gap-4">
             <button onClick={() => setSearchOpen(true)} className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Search">
               <Search className="w-5 h-5" />

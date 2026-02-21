@@ -1,12 +1,10 @@
-import { Globe, Shield, Headphones, ArrowRight, Instagram, Camera } from "lucide-react";
+import { Globe, Shield, Headphones, ArrowRight, Camera } from "lucide-react";
 
 import product1 from "@/assets/product-1.jpg";
-import product2 from "@/assets/product-2.jpg";
-import product3 from "@/assets/product-3.jpg";
 import product4 from "@/assets/product-4.jpg";
-import hero1 from "@/assets/hero-1.jpg";
-import hero2 from "@/assets/hero-2.jpg";
-import hero3 from "@/assets/hero-3.jpg";
+import image1 from "@/assets/image1.png";
+import image2 from "@/assets/image2.jpg";
+import image3 from "@/assets/image3.png";
 
 const trustBadges = [
   { icon: Globe, title: "Worldwide Delivery", desc: "Fast & tracked shipping to every country" },
@@ -15,45 +13,27 @@ const trustBadges = [
 ];
 
 const productGrid = [
-  { image: product1, label: "Newcomers", isMain: true },
-  { image: product2, label: null, comingSoon: true },
-  { image: product3, label: null, comingSoon: false },
+  { image: image1, label: "Newcomers", isMain: true },
+  { image: image2, label: null, comingSoon: true },
+  { image: image3, label: null, comingSoon: false },
   { image: product4, label: null, comingSoon: true },
 ];
 
 const communityImages = [
-  { image: hero1, user: "@streetking" },
-  { image: hero2, user: "@urbangirl" },
-  { image: hero3, user: "@nightrider" },
+  { image: image1, user: "@streetking" },
+  { image: image2, user: "@urbangirl" },
+  { image: image3, user: "@nightrider" },
   { image: product1, user: "@darkstyle" },
-  { image: product3, user: "@hoodie.life" },
-  { image: product2, user: "@capgame" },
 ];
 
 export default function Sections() {
   return (
     <>
-      {/* TRUST BADGES - full width black */}
-      <section className="bg-foreground text-background">
-        <div className="grid grid-cols-3 divide-x divide-background/10">
-          {trustBadges.map((badge) => (
-            <div key={badge.title} className="flex flex-col items-center text-center gap-2 py-8 px-4">
-              <badge.icon className="w-5 h-5 text-background/70" strokeWidth={1.5} />
-              <h4 className="text-[11px] tracking-[0.15em] uppercase font-medium text-background">
-                {badge.title}
-              </h4>
-              <p className="text-[10px] text-background/50 leading-relaxed hidden md:block">
-                {badge.desc}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* PRODUCT GRID - 4 images edge to edge */}
-      <section className="grid grid-cols-2 md:grid-cols-4">
+      {/* PRODUCT GRID - NEWCOMERS */}
+      <section className="px-6 pt-10 md:px-10 md:pt-10 pb-0">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-[10px]">
         {productGrid.map((item, i) => (
-          <a key={i} href="#" className="group relative aspect-[3/4] overflow-hidden block">
+          <a key={i} href="#" className="group relative h-[240px] sm:h-[360px] md:h-[460px] overflow-hidden block">
             <img
               src={item.image}
               alt={item.label || "Product"}
@@ -82,37 +62,20 @@ export default function Sections() {
             )}
           </a>
         ))}
-      </section>
-
-      {/* JOIN THE CLUB */}
-      <section className="py-16 md:py-20 px-6 bg-secondary">
-        <div className="max-w-2xl mx-auto text-center">
-          <p className="micro-text text-muted-foreground mb-3">Members only</p>
-          <h2 className="section-heading mb-3">Join Frakktur Club</h2>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-            Register to unlock exclusive rewards, early access to drops, members-only discounts, and birthday perks.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
-            <a href="#" className="btn-gold inline-block text-center">Create Account</a>
-            <a href="#" className="btn-outline inline-block text-center">Learn More</a>
-          </div>
         </div>
       </section>
 
-      {/* COMMUNITY HALL */}
-      <section className="py-16 md:py-20 px-6 bg-background">
-        <div className="text-center mb-8">
-          <p className="micro-text text-muted-foreground mb-2">
-            <Instagram className="w-3 h-3 inline mr-1" /> Tag us @frakktur
-          </p>
-          <h2 className="section-heading mb-2">Community Hall</h2>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Our community wears it best. Share your look and get featured here.
+      {/* COMMUNITY HUB */}
+      <section className="py-10 md:py-14 px-6 md:px-10 bg-background">
+        <div className="mb-8">
+          <h2 className="section-heading mb-2 text-left">Community hub</h2>
+          <p className="text-sm text-muted-foreground text-left">
+            Tag us at @distopion to get featured on our website!
           </p>
         </div>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
+        <div className="grid grid-cols-2 gap-[10px]">
           {communityImages.map((item, i) => (
-            <a key={i} href="#" className="group relative aspect-square overflow-hidden block">
+            <a key={i} href="#" className="group relative aspect-[9/16] overflow-hidden block">
               <img
                 src={item.image}
                 alt={`Community ${item.user}`}
@@ -127,6 +90,41 @@ export default function Sections() {
               </div>
             </a>
           ))}
+        </div>
+      </section>
+
+      {/* TRUST BADGES - bigger and below newcomers */}
+      <section className="bg-foreground text-background py-10 md:py-14 px-6 md:px-10">
+        <div className="grid md:grid-cols-3 gap-[10px]">
+          {trustBadges.map((badge) => (
+            <div key={badge.title} className="flex flex-col items-center text-center gap-3 py-8 px-6 border border-background/15">
+              <badge.icon className="w-7 h-7 text-background/80" strokeWidth={1.5} />
+              <h4 className="text-xs tracking-[0.15em] uppercase font-medium text-background">
+                {badge.title}
+              </h4>
+              <p className="text-xs text-background/60 leading-relaxed max-w-xs">
+                {badge.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* JOIN FRAKKTUR CLUB */}
+      <section className="py-14 md:py-16 px-6 md:px-10 bg-secondary">
+        <div className="max-w-3xl">
+          <p className="micro-text text-muted-foreground mb-3">Members only</p>
+          <h2 className="section-heading mb-3 text-left">Join Frakktur Club</h2>
+          <p className="text-sm text-muted-foreground max-w-xl leading-relaxed text-left">
+            Register, earn points & rewards on all purchases. Redeem exclusive offers and discounts.
+          </p>
+          <a
+            href="#"
+            className="inline-flex items-center gap-2 mt-6 text-sm uppercase tracking-[0.12em] underline underline-offset-4 hover:opacity-70 transition-opacity"
+          >
+            Sign up
+            <ArrowRight className="w-4 h-4" />
+          </a>
         </div>
       </section>
 
