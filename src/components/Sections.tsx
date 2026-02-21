@@ -6,9 +6,9 @@ import product1 from "@/assets/product-1.jpg";
 import product2 from "@/assets/product-2.jpg";
 import product3 from "@/assets/product-3.jpg";
 import product4 from "@/assets/product-4.jpg";
-import image1 from "@/assets/image1.png";
+import image1 from "@/assets/image1.jpg";
 import image2 from "@/assets/image2.jpg";
-import image3 from "@/assets/image3.png";
+import image3 from "@/assets/image3.jpg";
 
 const trustBadges = [
   { icon: Globe, title: "Worldwide Delivery", desc: "Fast & tracked shipping to every country" },

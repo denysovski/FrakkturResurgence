@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import image1 from "@/assets/image1.png";
-import image2 from "@/assets/image2.jpg";
-import image3 from "@/assets/image3.png";
+import image1 from "@/assets/landing1.png";
+import image2 from "@/assets/landing2.png";
+import image3 from "@/assets/landing3.png";
 
 const slides = [
   {
