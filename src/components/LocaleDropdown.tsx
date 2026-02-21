@@ -12,6 +12,8 @@ interface LocaleDropdownProps {
   selected: string;
   onChange: (value: string) => void;
   countryOptions?: CountryOption[]; // Only needed for currency dropdown to show flags
+  position?: "top" | "bottom"; // Position of dropdown menu
+  onOpenChange?: (isOpen: boolean) => void; // Notify parent when dropdown opens/closes
 }
 
 const LocaleDropdown = ({
@@ -20,6 +22,8 @@ const LocaleDropdown = ({
   selected,
   onChange,
   countryOptions,
+  position = "bottom",
+  onOpenChange,
 }: LocaleDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -27,12 +31,15 @@ const LocaleDropdown = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (menuRef.current && !menuRef.current.contains(target)) setIsOpen(false);
+      if (menuRef.current && !menuRef.current.contains(target)) {
+        setIsOpen(false);
+        onOpenChange?.(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [onOpenChange]);
 
   const isCountryType = type === "country";
   const isCountryMode = isCountryType && Array.isArray(options) && options.length > 0 && "flag" in options[0];
@@ -43,11 +50,16 @@ const LocaleDropdown = ({
   };
 
   const selectedCountryOption = isCountryMode ? getSelectedCountryOption(selected) : undefined;
+  const positionClass = position === "top" ? "bottom-full mb-3" : "top-full mt-3";
 
   return (
     <div ref={menuRef} className="relative flex items-center gap-2">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          const newState = !isOpen;
+          setIsOpen(newState);
+          onOpenChange?.(newState);
+        }}
         className="flex items-center gap-2 hover:opacity-70 transition-opacity"
         aria-label={`Open ${type} menu`}
       >
@@ -67,7 +79,9 @@ const LocaleDropdown = ({
       </button>
 
       <div
-        className={`absolute top-full right-0 mt-3 ${isCountryMode ? "w-60" : "w-44"} bg-background text-foreground border border-border shadow-sm z-[70] transition-all duration-200 origin-top-right ${
+        className={`absolute right-0 ${positionClass} ${isCountryMode ? "w-60" : "w-44"} bg-background text-foreground border border-border shadow-sm z-[70] transition-all duration-200 ${
+          position === "top" ? "origin-bottom-right" : "origin-top-right"
+        } ${
           isOpen
             ? "opacity-100 translate-y-0 pointer-events-auto"
             : "opacity-0 -translate-y-1 pointer-events-none"
@@ -80,6 +94,7 @@ const LocaleDropdown = ({
               onClick={() => {
                 onChange(option.value);
                 setIsOpen(false);
+                onOpenChange?.(false);
               }}
               className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors text-xs tracking-[0.08em]"
             >
@@ -98,6 +113,7 @@ const LocaleDropdown = ({
               onClick={() => {
                 onChange(option);
                 setIsOpen(false);
+                onOpenChange?.(false);
               }}
               className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors text-sm"
             >

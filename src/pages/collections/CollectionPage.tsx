@@ -31,7 +31,6 @@ const CollectionPage = ({
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 200, behavior: "smooth" });
   };
 
   // Generate page numbers to display (1, 2, 3, ... or 1, 2, 3, ..., n)

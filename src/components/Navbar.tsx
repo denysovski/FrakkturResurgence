@@ -59,6 +59,7 @@ export default function Navbar({
   const [searchOpen, setSearchOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
@@ -88,7 +89,7 @@ export default function Navbar({
     setMenuOpen(false);
   };
 
-  const navHasBackground = scrolled;
+  const navHasBackground = scrolled || dropdownOpen;
   const navItemColor = navHasBackground ? "text-foreground" : "text-primary-foreground";
 
   return (
@@ -122,6 +123,7 @@ export default function Navbar({
                 options={countryOptions}
                 selected={selectedCountry}
                 onChange={onCountryChange}
+                onOpenChange={setDropdownOpen}
               />
             </div>
 
@@ -131,6 +133,7 @@ export default function Navbar({
                 options={currencyOptions}
                 selected={selectedCurrency}
                 onChange={onCurrencyChange}
+                onOpenChange={setDropdownOpen}
               />
             </div>
 
