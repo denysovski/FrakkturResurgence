@@ -17,6 +17,14 @@ import PantsPage from "./pages/collections/PantsPage";
 import KnitwearPage from "./pages/collections/KnitwearPage";
 import LeatherJacketsPage from "./pages/collections/LeatherJacketsPage";
 
+// Auth pages
+import LoginPage from "./pages/auth/LoginPage";
+
+// Info pages
+import ClubPage from "./pages/info/ClubPage";
+import AboutPage from "./pages/info/AboutPage";
+import SustainabilityPage from "./pages/info/SustainabilityPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -38,6 +46,14 @@ const App = () => (
           <Route path="/collections/pants" element={<PantsPage />} />
           <Route path="/collections/knitwear" element={<KnitwearPage />} />
           <Route path="/collections/leather-jackets" element={<LeatherJacketsPage />} />
+          
+          {/* Auth */}
+          <Route path="/auth/login" element={<LoginPage />} />
+          
+          {/* Info Pages */}
+          <Route path="/club" element={<ClubPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/sustainability" element={<SustainabilityPage />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
