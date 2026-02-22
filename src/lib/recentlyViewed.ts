@@ -29,7 +29,28 @@ export const readRecentlyViewed = (): RecentlyViewedItem[] => {
 
   try {
     const parsed = JSON.parse(decodeURIComponent(serialized));
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    const unique: RecentlyViewedItem[] = [];
+    const seen = new Set<string>();
+
+    for (const item of parsed) {
+      if (!item || typeof item !== "object") {
+        continue;
+      }
+
+      const key = typeof item.key === "string" ? item.key : `${item.categoryKey}:${item.id}`;
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      unique.push({ ...item, key });
+    }
+
+    return unique;
   } catch {
     return [];
   }

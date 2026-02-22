@@ -25,20 +25,20 @@ const Footer = ({
 }: FooterProps) => {
   const footerColumns = [
     {
-      title: "Help & Contact",
-      links: ["Contact Us", "Shipping Info", "Returns", "FAQ"],
+      title: "Help and Contact",
+      links: ["Distopion Club", "My Account", "Track Order", "Get Help Now", "Shipping & Delivery", "Make a Return"],
     },
     {
       title: "Company",
-      links: ["About Us", "Careers", "Blog", "Press"],
+      links: ["About us", "Reviews", "Climate program", "Terms of service", "Shipping policy", "Refund policy", "Privacy policy"],
     },
     {
       title: "Social",
-      links: ["Instagram", "Facebook", "TikTok", "Discord"],
+      links: ["Facebook", "Instagram", "Tiktok"],
     },
     {
-      title: "Shop",
-      links: ["All Products", "New Arrivals", "Sale", "Collections"],
+      title: "Shop Collections",
+      links: ["T-shirts", "Hoodies", "Caps"],
     },
   ];
 
@@ -51,7 +51,7 @@ const Footer = ({
             <input
               type="email"
               placeholder="E-mail address"
-              className="w-full border border-border bg-background px-3 py-2.5 pr-10 text-sm outline-none focus:border-foreground/40 transition-colors rounded-full"
+              className="w-full border border-border bg-background px-3 py-2.5 pr-10 text-sm outline-none focus:border-foreground/40 transition-colors rounded-sm"
             />
             <button
               type="submit"
@@ -133,6 +133,11 @@ const Footer = ({
         <p className="text-xs text-muted-foreground">
           © 2026 Frakktur. All rights reserved.
         </p>
+        <div className="flex items-center gap-4">
+          <a href="#" className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">Terms</a>
+          <a href="#" className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
+          <a href="#" className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">Cookies</a>
+        </div>
       </div>
     </footer>
   );

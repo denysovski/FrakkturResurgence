@@ -42,6 +42,10 @@ export const writeCart = (items: CartItem[]) => {
   }
 
   document.cookie = `${CART_COOKIE}=${encodeURIComponent(JSON.stringify(items))}; path=/; max-age=2592000; SameSite=Lax`;
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("frakktur:cart-updated", { detail: items }));
+  }
 };
 
 export const addToCart = (item: Omit<CartItem, "key">) => {

@@ -7,7 +7,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { getCategoryData, getProductByCategoryAndId, type CategoryKey } from "@/lib/catalog";
 import { pushRecentlyViewed, readRecentlyViewed } from "@/lib/recentlyViewed";
 import { addToCart } from "@/lib/cart";
-import RecentlyViewedCarousel from "@/components/RecentlyViewedCarousel";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 
@@ -477,9 +476,6 @@ const ProductDetailPage = () => {
             </div>
           </div>
 
-          <div className="animate-fade-in-up-4">
-            <RecentlyViewedCarousel items={recentOtherProducts.slice(0, 4)} />
-          </div>
         </div>
 
         {/* Similar products section - all devices */}

@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { readCart, updateCartQuantity } from "@/lib/cart";
+import { readCart, updateCartQuantity, type CartItem } from "@/lib/cart";
 
 type CartSidebarProps = {
   open: boolean;
@@ -52,6 +52,28 @@ export default function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
     navigate(`/product/${categoryKey}/${id}`);
     onOpenChange(false);
   };
+
+  useEffect(() => {
+    if (open) {
+      setItems(readCart());
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const onCartUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<CartItem[]>;
+      if (Array.isArray(customEvent.detail)) {
+        setItems(customEvent.detail);
+        return;
+      }
+      setItems(readCart());
+    };
+
+    window.addEventListener("frakktur:cart-updated", onCartUpdated as EventListener);
+    return () => {
+      window.removeEventListener("frakktur:cart-updated", onCartUpdated as EventListener);
+    };
+  }, []);
 
   return (
     <>

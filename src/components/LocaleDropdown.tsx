@@ -10,6 +10,7 @@ interface Position {
   top: number;
   left?: number;
   right?: number;
+  translateY?: string;
 }
 
 interface LocaleDropdownProps {
@@ -52,21 +53,39 @@ const LocaleDropdown = ({
   }, [onOpenChange]);
 
   useEffect(() => {
-    if (isOpen && buttonRef.current) {
+    if (!isOpen || !buttonRef.current) {
+      return;
+    }
+
+    const updatePosition = () => {
+      if (!buttonRef.current) {
+        return;
+      }
+
       const rect = buttonRef.current.getBoundingClientRect();
       const newPos: Position = {
-        top: rect.bottom + window.scrollY + 8,
+        top: position === "top" ? rect.top - 8 : rect.bottom + 8,
+        translateY: position === "top" ? "-100%" : "0",
       };
-      
+
       if (align === "left") {
         newPos.left = rect.left;
       } else {
         newPos.right = window.innerWidth - rect.right;
       }
-      
+
       setDropdownPos(newPos);
-    }
-  }, [isOpen, align]);
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [isOpen, align, position]);
 
   const isCountryType = type === "country";
   const isCountryMode = isCountryType && Array.isArray(options) && options.length > 0 && "flag" in options[0];
@@ -112,6 +131,7 @@ const LocaleDropdown = ({
             top: `${dropdownPos.top}px`,
             left: dropdownPos.left !== undefined ? `${dropdownPos.left}px` : "auto",
             right: dropdownPos.right !== undefined ? `${dropdownPos.right}px` : "auto",
+            transform: `translateY(${dropdownPos.translateY || "0"})`,
           }}
         >
         {isCountryMode &&

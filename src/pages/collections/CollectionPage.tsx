@@ -118,7 +118,7 @@ const CollectionPage = ({
           </div>
         </div>
 
-        <div className="relative animate-fade-in-up-2">
+        <div className="relative z-[120] animate-fade-in-up-2">
           <button
             onClick={() => setSortMenuOpen(!sortMenuOpen)}
             className="flex items-center gap-2 px-4 py-2 border border-border hover:bg-secondary transition-colors rounded-sm text-sm"
@@ -129,7 +129,7 @@ const CollectionPage = ({
           </button>
 
           {sortMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-border shadow-sm z-[50] rounded-sm overflow-hidden">
+            <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-border shadow-sm z-[200] rounded-sm overflow-hidden">
               <button
                 onClick={() => {
                   setSortBy("newest");

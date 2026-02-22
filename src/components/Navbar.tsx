@@ -3,6 +3,7 @@ import { Menu, Search, User, X, Heart, ShoppingCart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import LocaleDropdown from "./LocaleDropdown";
 import CartSidebar from "./CartSidebar";
+import { readCart, type CartItem } from "@/lib/cart";
 
 import product1 from "@/assets/product-1.jpg";
 import product2 from "@/assets/product-2.jpg";
@@ -64,6 +65,7 @@ export default function Navbar({
   const [visible, setVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => readCart());
   const lastScrollY = useRef(0);
   const navigate = useNavigate();
 
@@ -76,6 +78,26 @@ export default function Navbar({
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const syncCart = () => setCartItems(readCart());
+    const onCartUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<CartItem[]>;
+      if (Array.isArray(customEvent.detail)) {
+        setCartItems(customEvent.detail);
+        return;
+      }
+      syncCart();
+    };
+
+    window.addEventListener("frakktur:cart-updated", onCartUpdated as EventListener);
+    window.addEventListener("focus", syncCart);
+
+    return () => {
+      window.removeEventListener("frakktur:cart-updated", onCartUpdated as EventListener);
+      window.removeEventListener("focus", syncCart);
+    };
   }, []);
 
   useEffect(() => {
@@ -119,6 +141,7 @@ export default function Navbar({
 
   const navHasBackground = scrolled || dropdownOpen;
   const navItemColor = forceBlackText ? "text-foreground" : (navHasBackground ? "text-foreground" : "text-primary-foreground");
+  const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <>
@@ -180,10 +203,15 @@ export default function Navbar({
 
             <button
               onClick={() => setCartOpen(true)}
-              className="p-1 transition-transform duration-200 hover:scale-110"
+              className="relative p-1 transition-transform duration-200 hover:scale-110"
               aria-label="Shopping cart"
             >
               <ShoppingCart className="w-5 h-5" strokeWidth={1.5} />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-foreground text-background text-[10px] leading-[18px] text-center font-medium">
+                  {cartItemCount > 99 ? "99+" : cartItemCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
