@@ -33,7 +33,7 @@ export default function NewsletterPopup() {
     <div className="fixed inset-0 z-[70] flex items-center justify-center" onClick={handleClose}>
       <div className="absolute inset-0 bg-foreground/50 backdrop-blur-sm" />
       <div
-        className="relative bg-background w-[90vw] max-w-md p-10 animate-fade-in-up"
+        className="relative bg-background w-[90vw] max-w-md p-10 animate-fade-in-up rounded-sm"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -60,7 +60,7 @@ export default function NewsletterPopup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full border border-border px-4 py-3 text-sm font-body outline-none focus:border-foreground transition-colors bg-transparent"
+                className="w-full border border-border px-4 py-3 text-sm font-body outline-none focus:border-foreground transition-colors bg-transparent rounded-sm"
               />
               <button type="submit" className="btn-primary w-full">
                 Subscribe & Get 10% Off

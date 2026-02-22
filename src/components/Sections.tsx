@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Globe, Shield, Headphones, ArrowRight, Camera, Facebook, Instagram, Music2, Send } from "lucide-react";
 import LocaleDropdown from "./LocaleDropdown";
+import { Link } from "react-router-dom";
+import RevealOnScroll from "./RevealOnScroll";
 
 import image1 from "@/assets/image1.jpg";
 import image2 from "@/assets/image2.jpg";
@@ -25,13 +27,14 @@ const trustBadges = [
 ];
 
 const productGrid = [
-  { image: tee1, label: "Newcomers", isMain: true },
+  { image: tee1, label: "Newcomers", isMain: true, href: "/collections/tshirts" },
   {
     image: tee2,
     hoverImage: tee5,
     label: null,
     comingSoon: true,
     swatches: ["bg-violet-700", "bg-black"],
+    href: "/collections/tshirts",
   },
   {
     image: tee3,
@@ -39,6 +42,7 @@ const productGrid = [
     label: null,
     comingSoon: false,
     swatches: ["bg-zinc-800", "bg-neutral-200 border border-border"],
+    href: "/collections/tshirts",
   },
   {
     image: tee4,
@@ -46,6 +50,7 @@ const productGrid = [
     label: null,
     comingSoon: true,
     swatches: ["bg-indigo-600", "bg-black"],
+    href: "/collections/tshirts",
   },
 ];
 
@@ -75,7 +80,7 @@ const footerColumns = [
   },
   {
     title: "Shop Collections",
-    links: ["Clothing", "Accessories", "Shoes"],
+    links: ["T-shirts", "Hoodies", "Caps"],
   },
 ];
 
@@ -107,21 +112,22 @@ export default function Sections({
   return (
     <>
       {/* PRODUCT GRID - NEWCOMERS */}
+      <RevealOnScroll>
       <section className="px-6 pt-10 md:px-10 md:pt-10 pb-0">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-[5px]">
         {productGrid.map((item, i) => (
-          <a key={i} href="#" className="group relative h-[240px] sm:h-[360px] md:h-[460px] overflow-hidden block">
+          <Link key={i} to={item.href || "#"} className="group relative h-[240px] sm:h-[360px] md:h-[460px] overflow-hidden block">
             <img
               src={item.hoverImage && selectedVariants[i] === 1 ? item.hoverImage : item.image}
               alt={item.label || "Product"}
-              className={`w-full h-full object-cover transition-opacity duration-400 ${item.isMain ? "brightness-60" : "brightness-75"} ${item.hoverImage ? "group-hover:opacity-0" : ""}`}
+              className={`w-full h-full object-cover transition-opacity duration-400 ${item.isMain ? "brightness-60" : "brightness-100"} ${item.hoverImage ? "group-hover:opacity-0" : ""}`}
               loading="lazy"
             />
             {item.hoverImage && (
               <img
                 src={selectedVariants[i] === 1 ? item.image : item.hoverImage}
                 alt="Alternate product view"
-                className="absolute inset-0 w-full h-full object-cover brightness-75 opacity-0 transition-opacity duration-400 group-hover:opacity-100"
+                className="absolute inset-0 w-full h-full object-cover brightness-100 opacity-0 transition-opacity duration-400 group-hover:opacity-100"
                 loading="lazy"
               />
             )}
@@ -175,12 +181,14 @@ export default function Sections({
                 />
               </div>
             )}
-          </a>
+          </Link>
         ))}
         </div>
       </section>
+      </RevealOnScroll>
 
       {/* COMMUNITY HUB */}
+      <RevealOnScroll delayMs={80}>
       <section className="py-10 md:py-14 px-6 md:px-10 bg-background">
         <div className="mb-8">
           <h2 className="section-heading normal-case tracking-normal mb-2 text-left">Community hub</h2>
@@ -210,8 +218,10 @@ export default function Sections({
           ))}
         </div>
       </section>
+      </RevealOnScroll>
 
       {/* TRUST BADGES - bigger and below newcomers */}
+      <RevealOnScroll delayMs={120}>
       <section className="bg-foreground text-background py-10 md:py-14 px-6 md:px-10">
         <div className="grid md:grid-cols-3 gap-[10px]">
           {trustBadges.map((badge) => (
@@ -227,8 +237,10 @@ export default function Sections({
           ))}
         </div>
       </section>
+      </RevealOnScroll>
 
       {/* JOIN FRAKKTUR CLUB */}
+      <RevealOnScroll delayMs={160}>
       <section className="py-14 md:py-16 px-6 md:px-10 bg-secondary">
         <div className="max-w-3xl">
           <p className="micro-text text-muted-foreground mb-3">Members only</p>
@@ -245,8 +257,10 @@ export default function Sections({
           </a>
         </div>
       </section>
+      </RevealOnScroll>
 
       {/* FOOTER */}
+      <RevealOnScroll delayMs={200}>
       <footer className="pt-10 pb-4 px-6 md:px-10 border-t border-border bg-secondary/50">
         <div className="pb-8 border-b border-border mb-8">
           <p className="text-xs text-muted-foreground mb-3">Newsletter</p>
@@ -313,6 +327,7 @@ export default function Sections({
           </div>
         </div>
       </footer>
+      </RevealOnScroll>
     </>
   );
 }

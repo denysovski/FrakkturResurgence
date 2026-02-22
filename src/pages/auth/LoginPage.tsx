@@ -1,16 +1,25 @@
 import PageLayout from "@/pages/PageLayout";
 import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 const LoginPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoginMode, setIsLoginMode] = useState(true);
+  const [isLoginMode, setIsLoginMode] = useState(searchParams.get("mode") !== "signup");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(isLoginMode ? "Login:" : "Register:", { email, password });
+    console.log(isLoginMode ? "Login:" : "Register:", { name, email, password });
+  };
+
+  const toggleMode = () => {
+    const nextIsLogin = !isLoginMode;
+    setIsLoginMode(nextIsLogin);
+    setSearchParams(nextIsLogin ? {} : { mode: "signup" });
   };
 
   return (
@@ -61,6 +70,22 @@ const LoginPage = () => {
 
           {/* Email & Password Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLoginMode && (
+              <div>
+                <label className="block text-sm font-normal mb-2">Name</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                    className="w-full border border-border bg-background px-4 py-3 text-sm outline-none focus:border-foreground/40 transition-colors rounded-sm"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-normal mb-2">Email</label>
               <div className="relative">
@@ -131,7 +156,7 @@ const LoginPage = () => {
                 ? "Don't have an account? "
                 : "Already have an account? "}
               <button
-                onClick={() => setIsLoginMode(!isLoginMode)}
+                onClick={toggleMode}
                 className="text-foreground font-normal hover:opacity-70 transition-opacity"
               >
                 {isLoginMode ? "Create one" : "Sign in"}

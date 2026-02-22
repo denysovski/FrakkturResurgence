@@ -59,7 +59,11 @@ export default function HeroCarousel() {
           className="absolute inset-0 fade-crossfade"
           style={{ opacity: i === current ? 1 : 0 }}
         >
-          <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
+          <img
+            src={slide.image}
+            alt={slide.title}
+            className={`w-full h-full object-cover transition-transform duration-[6000ms] ${i === current ? "scale-100" : "scale-110"}`}
+          />
         </div>
       ))}
 
@@ -80,7 +84,7 @@ export default function HeroCarousel() {
         <h2 className="text-4xl md:text-6xl font-display font-semibold tracking-wide text-primary-foreground mb-3">
           {slides[current].title}
         </h2>
-        <p className="accent-text text-primary-foreground/70 mb-6">
+        <p className="accent-text text-primary-foreground/70 mb-6 transition-all duration-700">
           {slides[current].desc}
         </p>
         <a href="#" className="btn-outline border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-foreground inline-block">

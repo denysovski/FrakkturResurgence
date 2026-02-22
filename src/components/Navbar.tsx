@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, Search, User, X, Heart, ShoppingCart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import LocaleDropdown from "./LocaleDropdown";
 
 import product1 from "@/assets/product-1.jpg";
@@ -13,16 +13,14 @@ const primaryMenuLinks = [
   { label: "T-shirts", href: "/collections/tshirts" },
   { label: "Hoodies", href: "/collections/hoodies" },
   { label: "Caps", href: "/collections/caps" },
-  { label: "Hats", href: "/collections/hats" },
   { label: "Belts", href: "/collections/belts" },
-  { label: "Shoes", href: "/collections/shoes" },
   { label: "Pants", href: "/collections/pants" },
   { label: "Knitwear", href: "/collections/knitwear" },
   { label: "Leather Jackets", href: "/collections/leather-jackets" },
 ];
 
 const secondaryMenuLinks = [
-  { label: "Login / Register", href: "/auth/login" },
+  { label: "Login / Register", href: "/auth/login?mode=signup" },
   { label: "Frakktur Club", href: "/club" },
   { label: "About Us", href: "/about" },
   { label: "Sustainability program", href: "/sustainability" },
@@ -58,11 +56,14 @@ export default function Navbar({
 }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [visible, setVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const lastScrollY = useRef(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => {
@@ -82,6 +83,13 @@ export default function Navbar({
     }
   }, [menuOpen, menuVisible]);
 
+  useEffect(() => {
+    if (!searchOpen && searchVisible) {
+      const timeout = setTimeout(() => setSearchVisible(false), 260);
+      return () => clearTimeout(timeout);
+    }
+  }, [searchOpen, searchVisible]);
+
   const openMenu = () => {
     setMenuVisible(true);
     requestAnimationFrame(() => setMenuOpen(true));
@@ -89,6 +97,22 @@ export default function Navbar({
 
   const closeMenu = () => {
     setMenuOpen(false);
+  };
+
+  const openSearch = () => {
+    setSearchVisible(true);
+    requestAnimationFrame(() => setSearchOpen(true));
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+  };
+
+  const handleSearchSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const trimmed = searchQuery.trim();
+    closeSearch();
+    navigate(`/search?q=${encodeURIComponent(trimmed)}`);
   };
 
   const navHasBackground = scrolled || dropdownOpen;
@@ -140,20 +164,20 @@ export default function Navbar({
             </div>
 
             <button
-              onClick={() => setSearchOpen(true)}
+              onClick={openSearch}
               className="p-1 transition-transform duration-200 hover:scale-110"
               aria-label="Search"
             >
               <Search className="w-5 h-5" />
             </button>
 
-            <a href="#" className="hidden md:block p-1 transition-transform duration-200 hover:scale-110" aria-label="Login">
+            <Link to="/auth/login?mode=signup" className="hidden md:block p-1 transition-transform duration-200 hover:scale-110" aria-label="Login">
               <User className="w-5 h-5" />
-            </a>
+            </Link>
 
-            <a href="#" className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Shopping cart">
+            <Link to="/cart" className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Shopping cart">
               <ShoppingCart className="w-5 h-5" strokeWidth={1.5} />
-            </a>
+            </Link>
           </div>
         </div>
       </header>
@@ -211,29 +235,37 @@ export default function Navbar({
         </div>
       )}
 
-      {searchOpen && (
-        <div className="fixed inset-0 z-[60]" onClick={() => setSearchOpen(false)}>
-          <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" />
+      {searchVisible && (
+        <div className="fixed inset-0 z-[60]" onClick={closeSearch}>
+          <div
+            className={`absolute inset-0 bg-foreground/30 backdrop-blur-sm transition-opacity duration-300 ${
+              searchOpen ? "opacity-100" : "opacity-0"
+            }`}
+          />
           <aside
-            className="absolute right-0 top-0 bottom-0 w-96 max-w-[90vw] bg-background animate-slide-in-right flex flex-col"
+            className={`absolute right-0 top-0 bottom-0 w-96 max-w-[90vw] bg-background flex flex-col transition-transform duration-300 ease-out ${
+              searchOpen ? "translate-x-0" : "translate-x-full"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-5 border-b border-border">
               <span className="text-xs tracking-[0.15em] uppercase font-medium">Search</span>
-              <button onClick={() => setSearchOpen(false)} aria-label="Close search">
+              <button onClick={closeSearch} aria-label="Close search">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="px-6 py-4 border-b border-border">
-              <div className="flex items-center gap-3">
+              <form onSubmit={handleSearchSubmit} className="flex items-center gap-3">
                 <Search className="w-4 h-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder="Search products or categories"
                   className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
                   autoFocus
                 />
-              </div>
+              </form>
             </div>
             <div className="px-6 py-3 border-b border-border">
               <button className="nav-link flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">

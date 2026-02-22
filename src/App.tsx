@@ -10,9 +10,7 @@ import NotFound from "./pages/NotFound";
 import TshirtsPage from "./pages/collections/TshirtsPage";
 import HoodiesPage from "./pages/collections/HoodiesPage";
 import CapsPage from "./pages/collections/CapsPage";
-import HatsPage from "./pages/collections/HatsPage";
 import BeltsPage from "./pages/collections/BeltsPage";
-import ShoesPage from "./pages/collections/ShoesPage";
 import PantsPage from "./pages/collections/PantsPage";
 import KnitwearPage from "./pages/collections/KnitwearPage";
 import LeatherJacketsPage from "./pages/collections/LeatherJacketsPage";
@@ -25,6 +23,9 @@ import ClubPage from "./pages/info/ClubPage";
 import AboutPage from "./pages/info/AboutPage";
 import SustainabilityPage from "./pages/info/SustainabilityPage";
 import CustomCursor from "./components/CustomCursor";
+import SearchResultsPage from "./pages/SearchResultsPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
+import CartPage from "./pages/CartPage";
 
 const queryClient = new QueryClient();
 
@@ -42,12 +43,13 @@ const App = () => (
           <Route path="/collections/tshirts" element={<TshirtsPage />} />
           <Route path="/collections/hoodies" element={<HoodiesPage />} />
           <Route path="/collections/caps" element={<CapsPage />} />
-          <Route path="/collections/hats" element={<HatsPage />} />
           <Route path="/collections/belts" element={<BeltsPage />} />
-          <Route path="/collections/shoes" element={<ShoesPage />} />
           <Route path="/collections/pants" element={<PantsPage />} />
           <Route path="/collections/knitwear" element={<KnitwearPage />} />
           <Route path="/collections/leather-jackets" element={<LeatherJacketsPage />} />
+          <Route path="/search" element={<SearchResultsPage />} />
+          <Route path="/product/:categoryKey/:productId" element={<ProductDetailPage />} />
+          <Route path="/cart" element={<CartPage />} />
           
           {/* Auth */}
           <Route path="/auth/login" element={<LoginPage />} />
