@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import PageLayout from "@/pages/PageLayout";
 import { readCart } from "@/lib/cart";
+import SEO from "@/components/SEO";
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -18,6 +19,11 @@ const CartPage = () => {
 
   return (
     <PageLayout forceBlackNavbar={true}>
+      <SEO
+        title="Shopping Cart"
+        description="View and manage your shopping cart at Frakktur. Review your selected luxury streetwear items and proceed to checkout."
+        canonicalUrl="https://frakktur.com/cart"
+      />
       <div className="pt-28 pb-20 px-6 md:px-10">
         <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6">Cart</h1>
 

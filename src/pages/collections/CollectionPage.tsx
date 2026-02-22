@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Filter, Sparkles, TrendingUp, Star, DollarSign, ChevronDown, Grid2x2, Grid3x3, Type } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { CategoryKey } from "@/lib/catalog";
+import SEO from "@/components/SEO";
 
 interface CollectionProduct {
   id: string;
@@ -81,6 +82,11 @@ const CollectionPage = ({
 
   return (
     <div className="pt-24 pb-16 px-6 md:px-10">
+      <SEO
+        title={title}
+        description={description || `Shop our exclusive ${title.toLowerCase()} collection featuring premium luxury streetwear.`}
+        canonicalUrl={`https://frakktur.com/collections/${categoryKey}`}
+      />
       <div className="mb-12">
         <h1 className="text-3xl md:text-4xl font-light mb-4 tracking-tight animate-fade-in-up">{title}</h1>
         {description && <p className="text-muted-foreground max-w-2xl animate-fade-in-up-1">{description}</p>}
@@ -194,7 +200,7 @@ const CollectionPage = ({
             <div className="aspect-square overflow-hidden bg-secondary mb-4 animate-fade-in-image">
               <img
                 src={product.image}
-                alt={product.name}
+                alt={`${product.name} - ${title.toLowerCase()} for sale at Frakktur luxury streetwear`}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
             </div>

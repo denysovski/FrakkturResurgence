@@ -61,7 +61,7 @@ export default function HeroCarousel() {
         >
           <img
             src={slide.image}
-            alt={slide.title}
+            alt={`${slide.title} - Frakktur luxury streetwear collection`}
             className={`w-full h-full object-cover transition-transform duration-[8000ms] ease-out ${i === current ? "scale-110" : "scale-100"}`}
           />
         </div>

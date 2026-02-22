@@ -1,8 +1,14 @@
 import PageLayout from "@/pages/PageLayout";
+import SEO from "@/components/SEO";
 
 const ClubPage = () => {
   return (
     <PageLayout forceBlackNavbar={true}>
+      <SEO
+        title="Frakktur Club"
+        description="Join the exclusive Frakktur Club community. Enjoy early access to new collections, exclusive member-only discounts, and premium benefits for luxury streetwear enthusiasts."
+        canonicalUrl="https://frakktur.com/club"
+      />
       <div className="pt-32 pb-24 px-6 md:px-10">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl font-light mb-4 tracking-tight">

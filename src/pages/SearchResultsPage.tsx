@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageLayout from "@/pages/PageLayout";
 import { catalogCategories, getAllProducts } from "@/lib/catalog";
+import SEO from "@/components/SEO";
 
 const SearchResultsPage = () => {
   const [params] = useSearchParams();
@@ -38,6 +39,11 @@ const SearchResultsPage = () => {
 
   return (
     <PageLayout forceBlackNavbar={true}>
+      <SEO
+        title={query ? `Search Results for "${query}"` : "Search"}
+        description={query ? `Search results for "${query}" on Frakktur. Find premium luxury streetwear products.` : "Search Frakktur's luxury streetwear collection including t-shirts, hoodies, caps, and more."}
+        canonicalUrl={`https://frakktur.com/search?q=${encodeURIComponent(query)}`}
+      />
       <div className="pt-28 pb-20 px-6 md:px-10">
         <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6 animate-fade-in-up">Search</h1>
 

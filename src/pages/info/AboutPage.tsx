@@ -1,8 +1,14 @@
 import PageLayout from "@/pages/PageLayout";
+import SEO from "@/components/SEO";
 
 const AboutPage = () => {
   return (
     <PageLayout forceBlackNavbar={true}>
+      <SEO
+        title="About Frakktur"
+        description="Learn about Frakktur's story and mission. We're redefining street fashion through innovation, quality, and cultural authenticity. Discover our commitment to sustainable luxury streetwear."
+        canonicalUrl="https://frakktur.com/about"
+      />
       <div className="pt-32 pb-24 px-6 md:px-10">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl font-light mb-4 tracking-tight">

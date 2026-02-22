@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import HeroCarousel from "@/components/HeroCarousel";
 import Sections from "@/components/Sections";
 import NewsletterPopup from "@/components/NewsletterPopup";
+import SEO from "@/components/SEO";
 
 const countryOptions = [
   { value: "GREAT BRITAIN", flag: "https://flagcdn.com/w40/gb.png" },
@@ -22,6 +23,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Home"
+        description="Frakktur - Luxury streetwear collection. Discover exclusive t-shirts, hoodies, caps, belts, pants, knitwear, and leather jackets. Premium quality apparel for the modern streetwear enthusiast."
+        canonicalUrl="https://frakktur.com/"
+      />
       <Navbar
         countryOptions={countryOptions}
         currencyOptions={currencyOptions}

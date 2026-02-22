@@ -1,8 +1,14 @@
 import PageLayout from "@/pages/PageLayout";
+import SEO from "@/components/SEO";
 
 const SustainabilityPage = () => {
   return (
     <PageLayout forceBlackNavbar={true}>
+      <SEO
+        title="Sustainability Program"
+        description="Frakktur's commitment to sustainable luxury streetwear. Learn how we create fashion that respects people and the planet through ethical practices."
+        canonicalUrl="https://frakktur.com/sustainability"
+      />
       <div className="pt-32 pb-24 px-6 md:px-10">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl font-light mb-4 tracking-tight">

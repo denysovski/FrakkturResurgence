@@ -2,6 +2,7 @@ import PageLayout from "@/pages/PageLayout";
 import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import SEO from "@/components/SEO";
 
 const LoginPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,6 +25,11 @@ const LoginPage = () => {
 
   return (
     <PageLayout forceBlackNavbar={true}>
+      <SEO
+        title={isLoginMode ? "Sign In" : "Create Account"}
+        description={isLoginMode ? "Sign in to your Frakktur account to access exclusive luxury streetwear and manage your orders." : "Create a new Frakktur account to shop premium luxury streetwear and join our community."}
+        canonicalUrl="https://frakktur.com/auth/login"
+      />
       <div className="pt-32 pb-24 px-6 md:px-10 min-h-[calc(100vh-200px)] flex items-center">
         <div className="w-full max-w-md mx-auto">
           <div className="mb-12">

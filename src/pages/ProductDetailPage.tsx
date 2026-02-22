@@ -9,6 +9,7 @@ import { pushRecentlyViewed, readRecentlyViewed } from "@/lib/recentlyViewed";
 import { addToCart } from "@/lib/cart";
 import RecentlyViewedCarousel from "@/components/RecentlyViewedCarousel";
 import { useToast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
 
 const ProductDetailPage = () => {
   const { categoryKey, productId } = useParams();
@@ -94,13 +95,19 @@ const ProductDetailPage = () => {
 
   return (
     <PageLayout forceBlackNavbar={true}>
+      <SEO
+        title={product?.name || "Product"}
+        description={product?.description ? `${product.description} | ${product.material}` : "High-quality luxury streetwear product"}
+        canonicalUrl={`https://frakktur.com/product/${categoryKey}/${productId}`}
+        ogImage={product?.image}
+      />
       <div className="min-h-screen bg-background">
         {/* Desktop: Side-by-side layout */}
         <div className="hidden lg:grid lg:grid-cols-2 lg:gap-16 max-w-7xl mx-auto px-10 py-20">
           {/* Image column - left side */}
           <div className="flex items-start justify-center lg:sticky lg:top-32 h-fit">
             <div className="w-full aspect-square bg-secondary rounded-sm overflow-hidden flex items-center justify-center animate-fade-in-image">
-              <img src={product.image} alt={product.name} className="w-full h-full object-contain p-8" />
+              <img src={product.image} alt={`${product?.name || "Product"} - Premium luxury streetwear`} className="w-full h-full object-contain p-8" />
             </div>
           </div>
 
