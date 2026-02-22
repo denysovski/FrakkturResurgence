@@ -1,5 +1,6 @@
 import PageLayout from "@/pages/PageLayout";
 import CollectionPage from "./CollectionPage";
+import { withCollectionImages } from "@/lib/collectionImages";
 import product1 from "@/assets/product-1.jpg";
 import product2 from "@/assets/product-2.jpg";
 import product3 from "@/assets/product-3.jpg";
@@ -29,7 +30,7 @@ const HatsPage = () => {
       <CollectionPage
         title="Hats"
         description="Timeless hat collection for every style. Explore our range of beanies, bucket hats, and wide-brim styles."
-        products={hatsProducts}
+        products={withCollectionImages("hats", hatsProducts)}
       />
     </PageLayout>
   );

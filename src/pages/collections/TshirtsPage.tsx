@@ -1,5 +1,6 @@
 import PageLayout from "@/pages/PageLayout";
 import CollectionPage from "./CollectionPage";
+import { withCollectionImages } from "@/lib/collectionImages";
 import product1 from "@/assets/product-1.jpg";
 import product2 from "@/assets/product-2.jpg";
 import product3 from "@/assets/product-3.jpg";
@@ -30,7 +31,7 @@ const TshirtsPage = () => {
       <CollectionPage
         title="T-Shirts"
         description="Discover our curated collection of premium t-shirts, from classic essentials to statement pieces."
-        products={tshirtProducts}
+        products={withCollectionImages("tshirts", tshirtProducts)}
       />
     </PageLayout>
   );

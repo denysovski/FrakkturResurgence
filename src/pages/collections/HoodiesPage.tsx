@@ -1,5 +1,6 @@
 import PageLayout from "@/pages/PageLayout";
 import CollectionPage from "./CollectionPage";
+import { withCollectionImages } from "@/lib/collectionImages";
 import product1 from "@/assets/product-1.jpg";
 import product2 from "@/assets/product-2.jpg";
 import product3 from "@/assets/product-3.jpg";
@@ -29,7 +30,7 @@ const HoodiesPage = () => {
       <CollectionPage
         title="Hoodies"
         description="Stylish and comfortable hoodies for every season. From classic designs to contemporary styles."
-        products={hoodieProducts}
+        products={withCollectionImages("hoodies", hoodieProducts)}
       />
     </PageLayout>
   );

@@ -1,5 +1,6 @@
 import PageLayout from "@/pages/PageLayout";
 import CollectionPage from "./CollectionPage";
+import { withCollectionImages } from "@/lib/collectionImages";
 import product1 from "@/assets/product-1.jpg";
 import product2 from "@/assets/product-2.jpg";
 import product3 from "@/assets/product-3.jpg";
@@ -29,7 +30,7 @@ const LeatherJacketsPage = () => {
       <CollectionPage
         title="Leather Jackets"
         description="Premium leather jackets collection. Iconic styles that never go out of fashion."
-        products={jacketsProducts}
+        products={withCollectionImages("leather-jackets", jacketsProducts)}
       />
     </PageLayout>
   );
