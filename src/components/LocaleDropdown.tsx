@@ -6,6 +6,12 @@ interface CountryOption {
   flag: string;
 }
 
+interface Position {
+  top: number;
+  left?: number;
+  right?: number;
+}
+
 interface LocaleDropdownProps {
   type: "country" | "currency";
   options: (CountryOption | string)[];
@@ -28,12 +34,14 @@ const LocaleDropdown = ({
   align = "right",
 }: LocaleDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<Position>({ top: 0 });
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (menuRef.current && !menuRef.current.contains(target)) {
+      if (menuRef.current && !menuRef.current.contains(target) && buttonRef.current && !buttonRef.current.contains(target)) {
         setIsOpen(false);
         onOpenChange?.(false);
       }
@@ -42,6 +50,23 @@ const LocaleDropdown = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onOpenChange]);
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const newPos: Position = {
+        top: rect.bottom + window.scrollY + 8,
+      };
+      
+      if (align === "left") {
+        newPos.left = rect.left;
+      } else {
+        newPos.right = window.innerWidth - rect.right;
+      }
+      
+      setDropdownPos(newPos);
+    }
+  }, [isOpen, align]);
 
   const isCountryType = type === "country";
   const isCountryMode = isCountryType && Array.isArray(options) && options.length > 0 && "flag" in options[0];
@@ -52,13 +77,11 @@ const LocaleDropdown = ({
   };
 
   const selectedCountryOption = isCountryMode ? getSelectedCountryOption(selected) : undefined;
-  const positionClass = position === "top" ? "bottom-full mb-3" : "top-full mt-3";
-  const alignClass = align === "left" ? "left-0" : "right-0";
-  const originClass = align === "left" ? (position === "top" ? "origin-bottom-left" : "origin-top-left") : (position === "top" ? "origin-bottom-right" : "origin-top-right");
 
   return (
-    <div ref={menuRef} className="relative flex items-center gap-2">
+    <div ref={menuRef} className="relative flex items-center gap-2" style={{ zIndex: "auto" }}>
       <button
+        ref={buttonRef}
         onClick={() => {
           const newState = !isOpen;
           setIsOpen(newState);
@@ -82,13 +105,15 @@ const LocaleDropdown = ({
         )}
       </button>
 
-      <div
-        className={`absolute ${alignClass} ${positionClass} ${isCountryMode ? "w-60" : "w-44"} bg-background text-foreground border border-border shadow-sm z-[70] transition-all duration-200 ${originClass} ${
-          isOpen
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 -translate-y-1 pointer-events-none"
-        }`}
-      >
+      {isOpen && (
+        <div
+          className={`fixed ${isCountryMode ? "w-60" : "w-44"} bg-background text-foreground border border-border shadow-lg z-[9999] rounded-sm`}
+          style={{
+            top: `${dropdownPos.top}px`,
+            left: dropdownPos.left !== undefined ? `${dropdownPos.left}px` : "auto",
+            right: dropdownPos.right !== undefined ? `${dropdownPos.right}px` : "auto",
+          }}
+        >
         {isCountryMode &&
           (options as CountryOption[]).map((option) => (
             <button
@@ -98,7 +123,7 @@ const LocaleDropdown = ({
                 setIsOpen(false);
                 onOpenChange?.(false);
               }}
-              className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors text-xs tracking-[0.08em]"
+              className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors text-xs tracking-[0.08em] border-b border-border last:border-b-0"
             >
               <span className="flex items-center gap-2">
                 <img src={option.flag} alt={option.value} className="h-4 w-6 object-cover rounded-sm" />
@@ -117,13 +142,14 @@ const LocaleDropdown = ({
                 setIsOpen(false);
                 onOpenChange?.(false);
               }}
-              className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors text-sm"
+              className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary transition-colors text-sm border-b border-border last:border-b-0"
             >
               <span>{option}</span>
               {selected === option && <span>✓</span>}
             </button>
           ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

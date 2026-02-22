@@ -126,8 +126,9 @@ export default function Navbar({
         className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
           visible ? "top-0" : "-top-20"
         } ${forceBlackText || navHasBackground ? "bg-background/95 backdrop-blur-sm shadow-sm" : "bg-transparent"}`}
+        style={{ overflow: "visible" }}
       >
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center justify-between px-6 py-4" style={{ overflow: "visible" }}>
           <button
             onClick={openMenu}
             className={`p-1 transition-transform duration-200 hover:scale-110 ${navItemColor}`}
