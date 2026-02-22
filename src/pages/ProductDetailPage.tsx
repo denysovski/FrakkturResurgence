@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Heart, Minus, Plus, ShoppingBag } from "lucide-react";
 import PageLayout from "@/pages/PageLayout";
@@ -22,6 +22,11 @@ const ProductDetailPage = () => {
   const [selectedSize, setSelectedSize] = useState(product?.sizes?.[2] || "M");
   const [quantity, setQuantity] = useState(1);
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
+
+  // Scroll to top when product changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [categoryKey, productId]);
 
   const recentlyViewed = useMemo(() => {
     if (!product || !safeCategory) {
