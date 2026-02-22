@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 
 export default function CustomCursor() {
-  const [dot, setDot] = useState({ x: 0, y: 0 });
-  const [ring, setRing] = useState({ x: 0, y: 0 });
+  const [crosshair, setCrosshair] = useState({ x: 0, y: 0 });
+  const [circle, setCircle] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
 
   useEffect(() => {
     const handleMove = (event: MouseEvent) => {
-      setDot({ x: event.clientX, y: event.clientY });
+      setCrosshair({ x: event.clientX, y: event.clientY });
       setIsVisible(true);
 
       const target = event.target as HTMLElement | null;
@@ -32,9 +32,9 @@ export default function CustomCursor() {
     let animationId = 0;
 
     const animate = () => {
-      setRing((prev) => ({
-        x: prev.x + (dot.x - prev.x) * 0.16,
-        y: prev.y + (dot.y - prev.y) * 0.16,
+      setCircle((prev) => ({
+        x: prev.x + (crosshair.x - prev.x) * 0.16,
+        y: prev.y + (crosshair.y - prev.y) * 0.16,
       }));
       animationId = window.requestAnimationFrame(animate);
     };
@@ -42,18 +42,30 @@ export default function CustomCursor() {
     animationId = window.requestAnimationFrame(animate);
 
     return () => window.cancelAnimationFrame(animationId);
-  }, [dot.x, dot.y]);
+  }, [crosshair.x, crosshair.y]);
 
   return (
     <>
+      {/* Gun Scope Circle that follows with delay */}
       <span
-        className={`custom-cursor-dot ${isVisible ? "opacity-100" : "opacity-0"}`}
-        style={{ transform: `translate3d(${dot.x}px, ${dot.y}px, 0) scale(${isInteractive ? 1.5 : 1})` }}
+        className={`custom-cursor-circle ${isVisible ? "opacity-100" : "opacity-0"}`}
+        style={{ 
+          transform: `translate3d(${circle.x}px, ${circle.y}px, 0)`,
+        }}
       />
+      
+      {/* Crosshair (+ shape) at exact cursor position */}
       <span
-        className={`custom-cursor-ring ${isVisible ? "opacity-100" : "opacity-0"}`}
-        style={{ transform: `translate3d(${ring.x}px, ${ring.y}px, 0)` }}
-      />
+        className={`custom-cursor-crosshair ${isVisible ? "opacity-100" : "opacity-0"}`}
+        style={{ 
+          transform: `translate3d(${crosshair.x}px, ${crosshair.y}px, 0) scale(${isInteractive ? 1.3 : 1})`
+        }}
+      >
+        {/* Vertical line */}
+        <div className="absolute w-[1px] h-4 bg-red-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+        {/* Horizontal line */}
+        <div className="absolute h-[1px] w-4 bg-red-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+      </span>
     </>
   );
 }

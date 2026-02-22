@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { getCategoryData, getProductByCategoryAndId, type CategoryKey } from "@/lib/catalog";
 import { pushRecentlyViewed, readRecentlyViewed } from "@/lib/recentlyViewed";
 import { addToCart } from "@/lib/cart";
+import RecentlyViewedCarousel from "@/components/RecentlyViewedCarousel";
 import { useToast } from "@/hooks/use-toast";
 
 const ProductDetailPage = () => {
@@ -90,15 +91,15 @@ const ProductDetailPage = () => {
     <PageLayout forceBlackNavbar={true}>
       <div className="pt-28 pb-20 px-6 md:px-10">
         <div className="grid md:grid-cols-2 gap-8 md:gap-10">
-          <div className="bg-secondary">
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover min-h-[460px]" />
+          <div className="bg-secondary flex items-center justify-center animate-fade-in-image">
+            <img src={product.image} alt={product.name} className="w-full h-full object-contain max-w-[700px] max-h-[700px]" />
           </div>
 
           <div>
-            <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-2">{product.name}</h1>
-            <p className="text-xl text-muted-foreground mb-5">{product.price}</p>
+            <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-2 animate-fade-in-up">{product.name}</h1>
+            <p className="text-xl text-muted-foreground mb-5 animate-fade-in-up-1">{product.price}</p>
 
-            <div className="mb-6">
+            <div className="mb-6 animate-fade-in-up-2">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Available sizes</p>
               <div className="flex flex-wrap gap-2">
                 {product.sizes.map((size) => (
@@ -121,12 +122,12 @@ const ProductDetailPage = () => {
             <button
               type="button"
               onClick={() => setIsSizeChartOpen(true)}
-              className="text-sm underline underline-offset-4 mb-6"
+              className="text-sm underline underline-offset-4 mb-6 animate-fade-in-up-2"
             >
               Size chart
             </button>
 
-            <div className="space-y-4 mb-6 text-sm leading-relaxed text-muted-foreground">
+            <div className="space-y-4 mb-6 text-sm leading-relaxed text-muted-foreground animate-fade-in-up-3">
               <p>
                 <span className="font-medium text-foreground">Description:</span> {product.description}
               </p>
@@ -138,7 +139,7 @@ const ProductDetailPage = () => {
               </p>
             </div>
 
-            <div className="mb-5">
+            <div className="mb-5 animate-fade-in-up-3">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-2">Quantity</p>
               <div className="inline-flex items-center border border-border">
                 <button
@@ -161,7 +162,7 @@ const ProductDetailPage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 animate-fade-in-up-4">
               <button
                 type="button"
                 onClick={handleAddToCart}
@@ -185,7 +186,7 @@ const ProductDetailPage = () => {
               </button>
             </div>
 
-            <div className="mb-8">
+            <div className="mb-8 animate-fade-in-up-2">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-2">FAQ</p>
               <Accordion type="single" collapsible>
                 <AccordionItem value="shipping">
@@ -203,7 +204,7 @@ const ProductDetailPage = () => {
               </Accordion>
             </div>
 
-            <div className="mb-8">
+            <div className="mb-8 animate-fade-in-up-3">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Similar piece of clothing</p>
               <div className="grid grid-cols-2 gap-3">
                 {similarProducts.map((item) => (
@@ -223,30 +224,8 @@ const ProductDetailPage = () => {
               </div>
             </div>
 
-            <div>
-              <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Recently viewed</p>
-              {recentOtherProducts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">You didn't check any piece yet. Big mistake</p>
-              ) : (
-                <div className="space-y-2">
-                  {recentOtherProducts.slice(0, 4).map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => navigate(`/product/${item.categoryKey}/${item.id}`)}
-                      className="w-full text-left border border-border p-2 hover:bg-secondary transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img src={item.image} alt={item.name} className="w-12 h-12 object-cover" />
-                        <div>
-                          <p className="text-xs">{item.name}</p>
-                          <p className="text-[11px] text-muted-foreground">{item.categoryTitle} · {item.price}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="animate-fade-in-up-4">
+              <RecentlyViewedCarousel items={recentOtherProducts.slice(0, 4)} />
             </div>
           </div>
         </div>

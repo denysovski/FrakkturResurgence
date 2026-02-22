@@ -39,9 +39,9 @@ const SearchResultsPage = () => {
   return (
     <PageLayout forceBlackNavbar={true}>
       <div className="pt-28 pb-20 px-6 md:px-10">
-        <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6">Search</h1>
+        <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6 animate-fade-in-up">Search</h1>
 
-        <form onSubmit={onSubmit} className="max-w-2xl mb-10">
+        <form onSubmit={onSubmit} className="max-w-2xl mb-10 animate-fade-in-up-1">
           <label className="relative block">
             <input
               value={query}
@@ -59,10 +59,10 @@ const SearchResultsPage = () => {
         </form>
 
         {normalized.length === 0 ? (
-          <p className="text-muted-foreground">Type a keyword and press Enter to search.</p>
+          <p className="text-muted-foreground animate-fade-in-up-2">Type a keyword and press Enter to search.</p>
         ) : (
           <div className="space-y-12">
-            <section>
+            <section className="animate-fade-in-up-1">
               <h2 className="text-lg font-medium mb-4">Categories</h2>
               {categoryResults.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No category matches.</p>
@@ -83,18 +83,19 @@ const SearchResultsPage = () => {
               )}
             </section>
 
-            <section>
+            <section className="animate-fade-in-up-2">
               <h2 className="text-lg font-medium mb-4">Products</h2>
               {productResults.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No products found for “{initial}”.</p>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                  {productResults.map((product) => (
+                  {productResults.map((product, idx) => (
                     <button
                       key={`${product.categoryKey}-${product.id}`}
                       type="button"
                       onClick={() => navigate(`/product/${product.categoryKey}/${product.id}`)}
-                      className="text-left group"
+                      className="text-left group animate-fade-in-up"
+                      style={{ animationDelay: `${idx * 0.08}s` }}
                     >
                       <div className="aspect-square bg-secondary overflow-hidden mb-2">
                         <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />

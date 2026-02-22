@@ -120,7 +120,7 @@ export default function Sections({
             <img
               src={item.hoverImage && selectedVariants[i] === 1 ? item.hoverImage : item.image}
               alt={item.label || "Product"}
-              className={`w-full h-full object-cover transition-opacity duration-400 ${item.isMain ? "brightness-60" : "brightness-100"} ${item.hoverImage ? "group-hover:opacity-0" : ""}`}
+              className={`w-full h-full object-cover transition-opacity duration-400 ${item.isMain ? "brightness-70" : "brightness-100"} ${item.hoverImage ? "group-hover:opacity-0" : ""}`}
               loading="lazy"
             />
             {item.hoverImage && (

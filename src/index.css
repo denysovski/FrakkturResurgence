@@ -102,29 +102,73 @@
     transition: opacity 1s ease-in-out;
   }
 
-  .custom-cursor-dot {
-    @apply fixed top-0 left-0 w-[6px] h-[6px] rounded-full z-[100] pointer-events-none transition-opacity duration-200;
-    background-color: #ff2d2d;
-    transform: translate3d(-100px, -100px, 0);
-    margin-left: -3px;
-    margin-top: -3px;
+  .custom-cursor-crosshair {
+    @apply fixed top-0 left-0 w-0 h-0 z-[100] pointer-events-none transition-opacity duration-200;
+    margin-left: 0;
+    margin-top: 0;
   }
 
-  .custom-cursor-dot-active {
-    transform: translate3d(-100px, -100px, 0) scale(1.5);
+  .custom-cursor-circle {
+    @apply fixed top-0 left-0 w-[40px] h-[40px] rounded-full border border-red-500 z-[99] pointer-events-none transition-opacity duration-200;
+    transform: translate3d(-100px, -100px, 0);
+    margin-left: -20px;
+    margin-top: -20px;
   }
 
-  .custom-cursor-ring {
-    @apply fixed top-0 left-0 w-7 h-7 rounded-full border z-[99] pointer-events-none transition-opacity duration-200;
-    border-color: rgba(255, 45, 45, 0.7);
-    transform: translate3d(-100px, -100px, 0);
-    margin-left: -14px;
-    margin-top: -14px;
+  /* Premium fade-in animations */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
+
+  @keyframes fadeInImage {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out;
+  }
+
+  .animate-fade-in-image {
+    animation: fadeInImage 1.2s ease-out;
+  }
+
+  .animate-fade-in-scale {
+    animation: fadeInScale 1s ease-out;
+  }
+
+  /* Staggered animations */
+  .animate-fade-in-up-0 { animation: fadeInUp 0.8s ease-out 0s; }
+  .animate-fade-in-up-1 { animation: fadeInUp 0.8s ease-out 0.1s both; }
+  .animate-fade-in-up-2 { animation: fadeInUp 0.8s ease-out 0.2s both; }
+  .animate-fade-in-up-3 { animation: fadeInUp 0.8s ease-out 0.3s both; }
+  .animate-fade-in-up-4 { animation: fadeInUp 0.8s ease-out 0.4s both; }
 
   @media (hover: none), (pointer: coarse) {
-    .custom-cursor-dot,
-    .custom-cursor-ring {
+    .custom-cursor-crosshair,
+    .custom-cursor-circle {
       display: none;
     }
   }

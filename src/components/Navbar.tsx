@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Menu, Search, User, X, Heart, ShoppingCart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import LocaleDropdown from "./LocaleDropdown";
+import CartSidebar from "./CartSidebar";
 
 import product1 from "@/assets/product-1.jpg";
 import product2 from "@/assets/product-2.jpg";
@@ -58,6 +59,7 @@ export default function Navbar({
   const [menuVisible, setMenuVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [visible, setVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
@@ -175,9 +177,13 @@ export default function Navbar({
               <User className="w-5 h-5" />
             </Link>
 
-            <Link to="/cart" className="p-1 transition-transform duration-200 hover:scale-110" aria-label="Shopping cart">
+            <button
+              onClick={() => setCartOpen(true)}
+              className="p-1 transition-transform duration-200 hover:scale-110"
+              aria-label="Shopping cart"
+            >
               <ShoppingCart className="w-5 h-5" strokeWidth={1.5} />
-            </Link>
+            </button>
           </div>
         </div>
       </header>
@@ -289,6 +295,8 @@ export default function Navbar({
           </aside>
         </div>
       )}
+
+      <CartSidebar open={cartOpen} onOpenChange={setCartOpen} />
     </>
   );
 }

@@ -77,11 +77,11 @@ const CollectionPage = ({
   return (
     <div className="pt-24 pb-16 px-6 md:px-10">
       <div className="mb-12">
-        <h1 className="text-3xl md:text-4xl font-light mb-4 tracking-tight">{title}</h1>
-        {description && <p className="text-muted-foreground max-w-2xl">{description}</p>}
+        <h1 className="text-3xl md:text-4xl font-light mb-4 tracking-tight animate-fade-in-up">{title}</h1>
+        {description && <p className="text-muted-foreground max-w-2xl animate-fade-in-up-1">{description}</p>}
       </div>
 
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-border">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-border animate-fade-in-up-1">
         <div className="flex items-center gap-4">
           <div className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{sortedProducts.length}</span> items
@@ -178,14 +178,15 @@ const CollectionPage = ({
       <div className={`grid gap-6 md:gap-8 mb-16 ${
         gridCols === 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3"
       }`}>
-        {visibleProducts.map((product) => (
+        {visibleProducts.map((product, idx) => (
           <button
             key={product.id}
             type="button"
             onClick={() => navigate(`/product/${categoryKey}/${product.id}`)}
-            className="group text-left"
+            className="group text-left animate-fade-in-up"
+            style={{ animationDelay: `${idx * 0.08}s` }}
           >
-            <div className="aspect-square overflow-hidden bg-secondary mb-4">
+            <div className="aspect-square overflow-hidden bg-secondary mb-4 animate-fade-in-image">
               <img
                 src={product.image}
                 alt={product.name}

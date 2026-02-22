@@ -60,3 +60,24 @@ export const addToCart = (item: Omit<CartItem, "key">) => {
   writeCart(updated);
   return updated;
 };
+export const updateCartQuantity = (key: string, quantity: number): CartItem[] => {
+  const current = readCart();
+  
+  if (quantity <= 0) {
+    return removeFromCart(key);
+  }
+  
+  const updated = current.map((item) =>
+    item.key === key ? { ...item, quantity } : item
+  );
+  
+  writeCart(updated);
+  return updated;
+};
+
+export const removeFromCart = (key: string): CartItem[] => {
+  const current = readCart();
+  const updated = current.filter((item) => item.key !== key);
+  writeCart(updated);
+  return updated;
+};
