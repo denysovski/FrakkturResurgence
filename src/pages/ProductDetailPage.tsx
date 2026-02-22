@@ -7,7 +7,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { getCategoryData, getProductByCategoryAndId, type CategoryKey } from "@/lib/catalog";
 import { pushRecentlyViewed, readRecentlyViewed } from "@/lib/recentlyViewed";
 import { addToCart } from "@/lib/cart";
-import RecentlyViewedCarousel from "@/components/RecentlyViewedCarousel";
 import { useToast } from "@/hooks/use-toast";
 
 const ProductDetailPage = () => {
@@ -89,19 +88,18 @@ const ProductDetailPage = () => {
 
   return (
     <PageLayout forceBlackNavbar={true}>
-      <div className="pt-28">
-        {/* Desktop: Fixed image on left, content on right */}
-        <div className="hidden md:grid md:grid-cols-[800px_1fr]">
-          {/* Fixed image column - left side */}
-          <div className="fixed left-0 top-28 w-[800px] h-[calc(100vh-112px)] bg-secondary flex items-center justify-center z-40 border-r border-border overflow-hidden">
-            <img src={product.image} alt={product.name} className="w-full h-full object-contain p-8 animate-fade-in-image" />
+      <div className="pt-28 pb-20">
+        {/* Desktop: Side-by-side layout */}
+        <div className="hidden md:grid md:grid-cols-[1fr_1fr] md:gap-10 px-10 max-w-7xl mx-auto">
+          {/* Image column - left side */}
+          <div className="bg-secondary flex items-center justify-center rounded-sm overflow-hidden animate-fade-in-image" style={{ height: "600px" }}>
+            <img src={product.image} alt={product.name} className="w-full h-full object-contain p-8" />
           </div>
 
-          {/* Content column - right side with padding for fixed image */}
-          <div className="ml-auto w-full pb-20 px-10" style={{ maxWidth: "calc(100% - 800px)" }}>
-            <div className="mt-10">
-              <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-2 animate-fade-in-up">{product.name}</h1>
-              <p className="text-xl text-muted-foreground mb-5 animate-fade-in-up-1">{product.price}</p>
+          {/* Content column - right side */}
+          <div className="pt-10">
+            <h1 className="text-4xl font-light tracking-tight mb-2 animate-fade-in-up">{product.name}</h1>
+            <p className="text-xl text-muted-foreground mb-6 animate-fade-in-up-1">{product.price}</p>
 
             <div className="mb-6 animate-fade-in-up-2">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Available sizes</p>
@@ -208,7 +206,7 @@ const ProductDetailPage = () => {
               </Accordion>
             </div>
 
-            <div className="mb-8 animate-fade-in-up-3">
+            <div className="animate-fade-in-up-3">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Similar piece of clothing</p>
               <div className="grid grid-cols-2 gap-3">
                 {similarProducts.map((item) => (
@@ -227,22 +225,17 @@ const ProductDetailPage = () => {
                 ))}
               </div>
             </div>
-
-            <div className="animate-fade-in-up-4">
-              <RecentlyViewedCarousel items={recentOtherProducts.slice(0, 4)} />
-            </div>
-            </div>
           </div>
         </div>
 
         {/* Mobile: Image above content */}
-        <div className="md:hidden px-6 pb-20">
-          <div className="bg-secondary flex items-center justify-center animate-fade-in-image rounded-sm mb-6" style={{ height: "400px" }}>
-            <img src={product.image} alt={product.name} className="w-full h-full object-contain" />
+        <div className="md:hidden px-6">
+          <div className="bg-secondary flex items-center justify-center animate-fade-in-image rounded-sm mb-6 overflow-hidden" style={{ height: "500px" }}>
+            <img src={product.image} alt={product.name} className="w-full h-full object-contain p-6" />
           </div>
 
           <h1 className="text-3xl font-light tracking-tight mb-2 animate-fade-in-up">{product.name}</h1>
-          <p className="text-xl text-muted-foreground mb-5 animate-fade-in-up-1">{product.price}</p>
+          <p className="text-xl text-muted-foreground mb-6 animate-fade-in-up-1">{product.price}</p>
 
           <div className="mb-6 animate-fade-in-up-2">
             <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Available sizes</p>
@@ -318,6 +311,12 @@ const ProductDetailPage = () => {
             </button>
             <button
               type="button"
+              onClick={() =>
+                toast({
+                  title: "Added to wishlist",
+                  description: `${product.name} added to your wishlist.`,
+                })
+              }
               className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3 text-sm hover:bg-secondary transition-colors"
             >
               <Heart className="w-4 h-4" />
@@ -362,24 +361,20 @@ const ProductDetailPage = () => {
               ))}
             </div>
           </div>
-
-          <div className="animate-fade-in-up-4">
-            <RecentlyViewedCarousel items={recentOtherProducts.slice(0, 4)} />
-          </div>
         </div>
 
-        {/* Full width recently viewed at bottom */}
-        <div className="w-full px-6 md:px-10 py-16 border-t border-border bg-secondary/30">
+        {/* Full width recently viewed section */}
+        <div className="w-full px-6 md:px-10 py-16 border-t border-border bg-secondary/30 max-w-7xl mx-auto">
           <h2 className="text-2xl font-light tracking-tight mb-8 animate-fade-in-up">Recently Viewed</h2>
-          <div className="flex gap-6 overflow-x-auto pb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {recentOtherProducts.map((item, idx) => (
               <button
                 key={item.key}
                 onClick={() => navigate(`/product/${item.categoryKey}/${item.id}`)}
-                className="flex-shrink-0 w-[200px] text-left group animate-fade-in-up"
+                className="text-left group animate-fade-in-up"
                 style={{ animationDelay: `${idx * 0.1}s` }}
               >
-                <div className="aspect-square overflow-hidden bg-background mb-3 rounded-sm">
+                <div className="aspect-square overflow-hidden bg-secondary mb-3 rounded-sm">
                   <img
                     src={item.image}
                     alt={item.name}
