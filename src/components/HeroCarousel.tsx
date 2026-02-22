@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import image1 from "@/assets/landing1.png";
-import image2 from "@/assets/landing2.png";
-import image3 from "@/assets/landing3.png";
+import image2 from "@/assets/landing2.jpg";
+import image3 from "@/assets/landing3.jpg";
 
 const slides = [
   {
@@ -64,6 +64,8 @@ export default function HeroCarousel() {
       ))}
 
       <div className="overlay-dark" />
+      <div className="absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-black/85 to-transparent z-[1]" />
+      <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/70 to-transparent z-[1]" />
 
       {/* Season tag top-left */}
       <div className="absolute top-24 left-6 md:left-16 z-10">

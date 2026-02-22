@@ -2,10 +2,6 @@ import { useState } from "react";
 import { Globe, Shield, Headphones, ArrowRight, Camera, Facebook, Instagram, Music2, Send } from "lucide-react";
 import LocaleDropdown from "./LocaleDropdown";
 
-import product1 from "@/assets/product-1.jpg";
-import product2 from "@/assets/product-2.jpg";
-import product3 from "@/assets/product-3.jpg";
-import product4 from "@/assets/product-4.jpg";
 import image1 from "@/assets/image1.jpg";
 import image2 from "@/assets/image2.jpg";
 import image3 from "@/assets/image3.jpg";
@@ -14,6 +10,13 @@ import image5 from "@/assets/image5.jpg";
 import image6 from "@/assets/image6.jpg";
 import image7 from "@/assets/image7.jpg";
 import image8 from "@/assets/image8.jpg";
+import tee1 from "@/assets/tee1.jpg";
+import tee2 from "@/assets/tee2.jpg";
+import tee3 from "@/assets/tee3.jpg";
+import tee4 from "@/assets/tee4.jpg";
+import tee5 from "@/assets/tee5.jpg";
+import tee6 from "@/assets/tee6.jpg";
+import tee7 from "@/assets/tee7.jpg";
 
 const trustBadges = [
   { icon: Globe, title: "Worldwide Delivery", desc: "Fast & tracked shipping to every country" },
@@ -22,24 +25,24 @@ const trustBadges = [
 ];
 
 const productGrid = [
-  { image: image1, label: "Newcomers", isMain: true },
+  { image: tee1, label: "Newcomers", isMain: true },
   {
-    image: image2,
-    hoverImage: product1,
+    image: tee2,
+    hoverImage: tee5,
     label: null,
     comingSoon: true,
     swatches: ["bg-violet-700", "bg-black"],
   },
   {
-    image: image3,
-    hoverImage: product3,
+    image: tee3,
+    hoverImage: tee6,
     label: null,
     comingSoon: false,
     swatches: ["bg-zinc-800", "bg-neutral-200 border border-border"],
   },
   {
-    image: product4,
-    hoverImage: product2,
+    image: tee4,
+    hoverImage: tee7,
     label: null,
     comingSoon: true,
     swatches: ["bg-indigo-600", "bg-black"],
@@ -47,14 +50,14 @@ const productGrid = [
 ];
 
 const communityImages = [
-  { image: image1, user: "@streetking" },
-  { image: image2, user: "@urbangirl" },
-  { image: image3, user: "@nightrider" },
-  { image: image4, user: "@darkstyle" },
-  { image: image5, user: "@distopion" },
-  { image: image6, user: "@citycore" },
-  { image: image7, user: "@streetfocus" },
-  { image: image8, user: "@nightline" },
+  { image: image1, user: "@streetking", flag: "🇺🇸", piece: "Shadowline Utility Tee" },
+  { image: image2, user: "@urbangirl", flag: "🇬🇧", piece: "Concrete Pulse Tee" },
+  { image: image3, user: "@nightrider", flag: "🇯🇵", piece: "Midnight Flux Tee" },
+  { image: image4, user: "@darkstyle", flag: "🇩🇪", piece: "Riptide Outbound Tee" },
+  { image: image5, user: "@distopion", flag: "🇫🇷", piece: "Noir District Tee" },
+  { image: image6, user: "@citycore", flag: "🇮🇹", piece: "Monza Street Tee" },
+  { image: image7, user: "@streetfocus", flag: "🇳🇱", piece: "Static Drift Tee" },
+  { image: image8, user: "@nightline", flag: "🇪🇸", piece: "Night Code Tee" },
 ];
 
 const footerColumns = [
@@ -191,13 +194,16 @@ export default function Sections({
               <img
                 src={item.image}
                 alt={`Community ${item.user}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover brightness-75"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors duration-300 flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
-                  <Camera className="w-4 h-4 text-primary-foreground mx-auto mb-1" />
-                  <p className="text-[10px] text-primary-foreground tracking-wider">{item.user}</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-colors duration-300">
+                <div className="absolute bottom-3 left-3 right-3 text-primary-foreground">
+                  <div className="flex items-center gap-1 mb-1">
+                    <Camera className="w-3 h-3" />
+                    <p className="text-[10px] tracking-wider">{item.flag} {item.user}</p>
+                  </div>
+                  <p className="text-[11px] leading-snug">{item.piece}</p>
                 </div>
               </div>
             </a>
