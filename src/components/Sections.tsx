@@ -10,13 +10,13 @@ import image5 from "@/assets/image5.jpg";
 import image6 from "@/assets/image6.jpg";
 import image7 from "@/assets/image7.jpg";
 import image8 from "@/assets/image8.jpg";
-import tee1 from "@/assets/tee1.jpg";
-import tee2 from "@/assets/tee2.jpg";
-import tee3 from "@/assets/tee3.jpg";
-import tee4 from "@/assets/tee4.jpg";
-import tee5 from "@/assets/tee5.jpg";
-import tee6 from "@/assets/tee6.jpg";
-import tee7 from "@/assets/tee7.jpg";
+import tee1 from "@/assets/collections/tshirts/tee1.jpg";
+import tee2 from "@/assets/collections/tshirts/tee2.jpg";
+import tee3 from "@/assets/collections/tshirts/tee3.jpg";
+import tee4 from "@/assets/collections/tshirts/tee4.jpg";
+import tee5 from "@/assets/collections/tshirts/tee5.jpg";
+import tee6 from "@/assets/collections/tshirts/tee6.jpg";
+import tee7 from "@/assets/collections/tshirts/tee7.jpg";
 
 const trustBadges = [
   { icon: Globe, title: "Worldwide Delivery", desc: "Fast & tracked shipping to every country" },
@@ -114,14 +114,14 @@ export default function Sections({
             <img
               src={item.hoverImage && selectedVariants[i] === 1 ? item.hoverImage : item.image}
               alt={item.label || "Product"}
-              className={`w-full h-full object-cover transition-opacity duration-400 ${item.hoverImage ? "group-hover:opacity-0" : ""}`}
+              className={`w-full h-full object-cover transition-opacity duration-400 ${item.isMain ? "brightness-60" : "brightness-75"} ${item.hoverImage ? "group-hover:opacity-0" : ""}`}
               loading="lazy"
             />
             {item.hoverImage && (
               <img
                 src={selectedVariants[i] === 1 ? item.image : item.hoverImage}
                 alt="Alternate product view"
-                className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-400 group-hover:opacity-100"
+                className="absolute inset-0 w-full h-full object-cover brightness-75 opacity-0 transition-opacity duration-400 group-hover:opacity-100"
                 loading="lazy"
               />
             )}
@@ -194,7 +194,7 @@ export default function Sections({
               <img
                 src={item.image}
                 alt={`Community ${item.user}`}
-                className="w-full h-full object-cover brightness-75"
+                className="w-full h-full object-cover brightness-75 transition-transform duration-500 ease-out group-hover:scale-105"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-colors duration-300">

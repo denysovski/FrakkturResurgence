@@ -24,12 +24,14 @@ import LoginPage from "./pages/auth/LoginPage";
 import ClubPage from "./pages/info/ClubPage";
 import AboutPage from "./pages/info/AboutPage";
 import SustainabilityPage from "./pages/info/SustainabilityPage";
+import CustomCursor from "./components/CustomCursor";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <CustomCursor />
       <Toaster />
       <Sonner />
       <BrowserRouter basename={import.meta.env.BASE_URL}>
