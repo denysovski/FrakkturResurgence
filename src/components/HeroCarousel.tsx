@@ -62,7 +62,7 @@ export default function HeroCarousel() {
           <img
             src={slide.image}
             alt={slide.title}
-            className={`w-full h-full object-cover transition-transform duration-[6000ms] ${i === current ? "scale-100" : "scale-110"}`}
+            className={`w-full h-full object-cover transition-transform duration-[8000ms] ease-out ${i === current ? "scale-110" : "scale-100"}`}
           />
         </div>
       ))}

@@ -90,9 +90,17 @@ const ProductDetailPage = () => {
   return (
     <PageLayout forceBlackNavbar={true}>
       <div className="pt-28 pb-20 px-6 md:px-10">
-        <div className="grid md:grid-cols-2 gap-8 md:gap-10">
-          <div className="bg-secondary flex items-center justify-center animate-fade-in-image">
-            <img src={product.image} alt={product.name} className="w-full h-full object-contain max-w-[700px] max-h-[700px]" />
+        <div className="grid md:grid-cols-[400px_1fr] gap-8 md:gap-10">
+          {/* Left sticky image column */}
+          <div className="hidden md:block">
+            <div className="sticky top-32 bg-secondary flex items-center justify-center animate-fade-in-image rounded-sm" style={{ maxHeight: "calc(100vh - 240px)" }}>
+              <img src={product.image} alt={product.name} className="w-full h-full object-contain" />
+            </div>
+          </div>
+
+          {/* Mobile image - above content on mobile */}
+          <div className="md:hidden bg-secondary flex items-center justify-center animate-fade-in-image rounded-sm mb-6" style={{ height: "400px" }}>
+            <img src={product.image} alt={product.name} className="w-full h-full object-contain" />
           </div>
 
           <div>

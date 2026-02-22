@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Filter, Sparkles, TrendingUp, Star, DollarSign, ChevronDown, Grid2x2, Grid3x3, Type } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { CategoryKey } from "@/lib/catalog";
@@ -37,6 +37,11 @@ const CollectionPage = ({
   const [gridCols, setGridCols] = useState(4);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   // Sort products based on selected option
   const sortedProducts = [...products].sort((a, b) => {
@@ -82,7 +87,7 @@ const CollectionPage = ({
       </div>
 
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-border animate-fade-in-up-1">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 animate-fade-in-up-2">
           <div className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{sortedProducts.length}</span> items
           </div>
@@ -107,7 +112,7 @@ const CollectionPage = ({
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative animate-fade-in-up-2">
           <button
             onClick={() => setSortMenuOpen(!sortMenuOpen)}
             className="flex items-center gap-2 px-4 py-2 border border-border hover:bg-secondary transition-colors rounded-sm text-sm"
