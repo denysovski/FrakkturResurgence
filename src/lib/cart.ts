@@ -1,4 +1,6 @@
 import type { CategoryKey } from "@/lib/catalog";
+import { apiFetch } from "@/lib/api/client";
+import { getProductByCategoryAndId } from "@/lib/catalog";
 
 export type CartItem = {
   key: string;
@@ -11,77 +13,56 @@ export type CartItem = {
   quantity: number;
 };
 
-const CART_COOKIE = "frakktur_cart";
-
-export const readCart = (): CartItem[] => {
-  if (typeof document === "undefined") {
-    return [];
-  }
-
-  const cookieValue = document.cookie
-    .split("; ")
-    .find((entry) => entry.startsWith(`${CART_COOKIE}=`));
-
-  if (!cookieValue) {
-    return [];
-  }
-
-  const serialized = cookieValue.split("=").slice(1).join("=");
-
-  try {
-    const parsed = JSON.parse(decodeURIComponent(serialized));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
-export const writeCart = (items: CartItem[]) => {
-  if (typeof document === "undefined") {
-    return;
-  }
-
-  document.cookie = `${CART_COOKIE}=${encodeURIComponent(JSON.stringify(items))}; path=/; max-age=2592000; SameSite=Lax`;
-
+const emitCartUpdated = (items: CartItem[]) => {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("frakktur:cart-updated", { detail: items }));
   }
 };
 
-export const addToCart = (item: Omit<CartItem, "key">) => {
-  const current = readCart();
-  const key = `${item.categoryKey}:${item.id}:${item.size}`;
-  const existing = current.find((cartItem) => cartItem.key === key);
-
-  const updated = existing
-    ? current.map((cartItem) =>
-        cartItem.key === key
-          ? { ...cartItem, quantity: cartItem.quantity + item.quantity }
-          : cartItem,
-      )
-    : [{ ...item, key }, ...current];
-
-  writeCart(updated);
-  return updated;
+export const readCart = async (): Promise<CartItem[]> => {
+  const response = await apiFetch("/api/cart");
+  const items = ((response.items || []) as CartItem[]).map((item) => {
+    const product = getProductByCategoryAndId(item.categoryKey as CategoryKey, item.id);
+    return {
+      ...item,
+      image: product?.image || item.image,
+    };
+  });
+  emitCartUpdated(items);
+  return items;
 };
-export const updateCartQuantity = (key: string, quantity: number): CartItem[] => {
-  const current = readCart();
-  
+
+export const addToCart = async (item: Omit<CartItem, "key">) => {
+  await apiFetch("/api/cart/items", {
+    method: "POST",
+    body: JSON.stringify({
+      categoryKey: item.categoryKey,
+      productCode: item.id,
+      size: item.size,
+      quantity: item.quantity,
+    }),
+  });
+
+  return readCart();
+};
+
+export const updateCartQuantity = async (key: string, quantity: number): Promise<CartItem[]> => {
   if (quantity <= 0) {
     return removeFromCart(key);
   }
-  
-  const updated = current.map((item) =>
-    item.key === key ? { ...item, quantity } : item
-  );
-  
-  writeCart(updated);
-  return updated;
+
+  await apiFetch(`/api/cart/items/${key}`, {
+    method: "PATCH",
+    body: JSON.stringify({ quantity }),
+  });
+
+  return readCart();
 };
 
-export const removeFromCart = (key: string): CartItem[] => {
-  const current = readCart();
-  const updated = current.filter((item) => item.key !== key);
-  writeCart(updated);
-  return updated;
+export const removeFromCart = async (key: string): Promise<CartItem[]> => {
+  await apiFetch(`/api/cart/items/${key}`, {
+    method: "DELETE",
+  });
+
+  return readCart();
 };

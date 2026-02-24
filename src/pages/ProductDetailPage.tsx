@@ -9,6 +9,8 @@ import { pushRecentlyViewed, readRecentlyViewed } from "@/lib/recentlyViewed";
 import { addToCart } from "@/lib/cart";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { fetchProductByCategoryAndId } from "@/lib/productsApi";
+import { addToWishlist } from "@/lib/wishlist";
 
 const ProductDetailPage = () => {
   const { categoryKey, productId } = useParams();
@@ -19,7 +21,8 @@ const ProductDetailPage = () => {
   const product = safeCategory && productId ? getProductByCategoryAndId(safeCategory, productId) : null;
   const category = safeCategory ? getCategoryData(safeCategory) : null;
 
-  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[2] || "M");
+  const [selectedSize, setSelectedSize] = useState("UNI");
+  const [dbSizes, setDbSizes] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
 
@@ -27,6 +30,31 @@ const ProductDetailPage = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [categoryKey, productId]);
+
+  useEffect(() => {
+    const loadProductFromDb = async () => {
+      if (!safeCategory || !productId) {
+        return;
+      }
+
+      try {
+        const dbProduct = await fetchProductByCategoryAndId(safeCategory, productId);
+        const sizes = dbProduct.sizes.filter(Boolean);
+        const selectableSizes = sizes.filter((size) => size !== "UNI");
+        setDbSizes(selectableSizes);
+        if (selectableSizes.length) {
+          setSelectedSize(selectableSizes[0]);
+        } else {
+          setSelectedSize("UNI");
+        }
+      } catch {
+        setDbSizes([]);
+        setSelectedSize("UNI");
+      }
+    };
+
+    void loadProductFromDb();
+  }, [safeCategory, productId]);
 
   const recentlyViewed = useMemo(() => {
     if (!product || !safeCategory) {
@@ -75,21 +103,45 @@ const ProductDetailPage = () => {
     );
   }
 
-  const handleAddToCart = () => {
-    addToCart({
-      id: product.id,
-      categoryKey: safeCategory,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      size: selectedSize,
-      quantity,
-    });
+  const availableSizes = dbSizes;
 
-    toast({
-      title: "Added to cart",
-      description: `${product.name} (${selectedSize}) × ${quantity} added to your cart.`,
-    });
+  const handleAddToCart = async () => {
+    try {
+      await addToCart({
+        id: product.id,
+        categoryKey: safeCategory,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        size: selectedSize,
+        quantity,
+      });
+
+      toast({
+        title: "Added to cart",
+        description: `${product.name} (${selectedSize}) × ${quantity} added to your cart.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Sign in required",
+        description: error instanceof Error ? error.message : "Please sign in to add items to cart.",
+      });
+    }
+  };
+
+  const handleAddToWishlist = async () => {
+    try {
+      await addToWishlist(safeCategory, product.id);
+      toast({
+        title: "Added to wishlist",
+        description: `${product.name} added to your wishlist.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Sign in required",
+        description: error instanceof Error ? error.message : "Please sign in to add items to wishlist.",
+      });
+    }
   };
 
   return (
@@ -118,7 +170,7 @@ const ProductDetailPage = () => {
             <div className="mb-8 animate-fade-in-up-2">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Available sizes</p>
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map((size) => (
+                {availableSizes.map((size) => (
                   <button
                     key={size}
                     type="button"
@@ -189,12 +241,7 @@ const ProductDetailPage = () => {
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  toast({
-                    title: "Added to wishlist",
-                    description: `${product.name} added to your wishlist.`,
-                  })
-                }
+                onClick={handleAddToWishlist}
                 className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3 text-sm hover:bg-secondary transition-colors"
               >
                 <Heart className="w-4 h-4" />
@@ -239,7 +286,7 @@ const ProductDetailPage = () => {
             <div className="mb-6 animate-fade-in-up-2">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Available sizes</p>
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map((size) => (
+                {availableSizes.map((size) => (
                   <button
                     key={size}
                     type="button"
@@ -310,12 +357,7 @@ const ProductDetailPage = () => {
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  toast({
-                    title: "Added to wishlist",
-                    description: `${product.name} added to your wishlist.`,
-                  })
-                }
+                onClick={handleAddToWishlist}
                 className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3 text-sm hover:bg-secondary transition-colors"
               >
                 <Heart className="w-4 h-4" />
@@ -423,14 +465,9 @@ const ProductDetailPage = () => {
               <ShoppingBag className="w-4 h-4" />
               Add to cart
             </button>
-            <button
-              type="button"
-              onClick={() =>
-                toast({
-                  title: "Added to wishlist",
-                  description: `${product.name} added to your wishlist.`,
-                })
-              }
+              <button
+                type="button"
+                onClick={handleAddToWishlist}
               className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3 text-sm hover:bg-secondary transition-colors"
             >
               <Heart className="w-4 h-4" />

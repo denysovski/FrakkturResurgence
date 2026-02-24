@@ -65,7 +65,7 @@ export default function Navbar({
   const [visible, setVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => readCart());
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const lastScrollY = useRef(0);
   const navigate = useNavigate();
 
@@ -81,14 +81,24 @@ export default function Navbar({
   }, []);
 
   useEffect(() => {
-    const syncCart = () => setCartItems(readCart());
+    const syncCart = async () => {
+      try {
+        const items = await readCart();
+        setCartItems(items);
+      } catch {
+        setCartItems([]);
+      }
+    };
+
+    syncCart();
+
     const onCartUpdated = (event: Event) => {
       const customEvent = event as CustomEvent<CartItem[]>;
       if (Array.isArray(customEvent.detail)) {
         setCartItems(customEvent.detail);
         return;
       }
-      syncCart();
+      void syncCart();
     };
 
     window.addEventListener("frakktur:cart-updated", onCartUpdated as EventListener);

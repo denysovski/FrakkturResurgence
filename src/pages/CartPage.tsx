@@ -1,12 +1,16 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageLayout from "@/pages/PageLayout";
-import { readCart } from "@/lib/cart";
+import { readCart, type CartItem } from "@/lib/cart";
 import SEO from "@/components/SEO";
 
 const CartPage = () => {
   const navigate = useNavigate();
-  const items = readCart();
+  const [items, setItems] = useState<CartItem[]>([]);
+
+  useEffect(() => {
+    readCart().then(setItems).catch(() => setItems([]));
+  }, []);
 
   const total = useMemo(
     () =>

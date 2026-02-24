@@ -11,7 +11,7 @@ type CartSidebarProps = {
 
 export default function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
   const navigate = useNavigate();
-  const [items, setItems] = useState(readCart());
+  const [items, setItems] = useState<CartItem[]>([]);
   const [removeConfirm, setRemoveConfirm] = useState<string | null>(null);
   const [itemToRemove, setItemToRemove] = useState<{ key: string; name: string } | null>(null);
 
@@ -24,19 +24,19 @@ export default function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
     [items],
   );
 
-  const handleQuantityChange = (key: string, quantity: number, itemName: string) => {
+  const handleQuantityChange = async (key: string, quantity: number, itemName: string) => {
     if (quantity === 0) {
       setRemoveConfirm(key);
       setItemToRemove({ key, name: itemName });
     } else {
-      const updated = updateCartQuantity(key, quantity);
+      const updated = await updateCartQuantity(key, quantity);
       setItems(updated);
     }
   };
 
-  const confirmRemoval = () => {
+  const confirmRemoval = async () => {
     if (removeConfirm) {
-      const updated = updateCartQuantity(removeConfirm, 0);
+      const updated = await updateCartQuantity(removeConfirm, 0);
       setItems(updated);
       setRemoveConfirm(null);
       setItemToRemove(null);
@@ -54,8 +54,17 @@ export default function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
   };
 
   useEffect(() => {
+    const sync = async () => {
+      try {
+        const data = await readCart();
+        setItems(data);
+      } catch {
+        setItems([]);
+      }
+    };
+
     if (open) {
-      setItems(readCart());
+      void sync();
     }
   }, [open]);
 
@@ -66,7 +75,7 @@ export default function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
         setItems(customEvent.detail);
         return;
       }
-      setItems(readCart());
+      void readCart().then(setItems).catch(() => setItems([]));
     };
 
     window.addEventListener("frakktur:cart-updated", onCartUpdated as EventListener);

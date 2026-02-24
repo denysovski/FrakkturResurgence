@@ -1,23 +1,85 @@
 import PageLayout from "@/pages/PageLayout";
 import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import SEO from "@/components/SEO";
+import { loginUser, registerUser, verifyRegistrationCode } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 const LoginPage = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoginMode, setIsLoginMode] = useState(searchParams.get("mode") !== "signup");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(isLoginMode ? "Login:" : "Register:", { name, email, password });
+
+    try {
+      setIsSubmitting(true);
+
+      if (isLoginMode) {
+        await loginUser({ email, password });
+        toast({
+          title: "Welcome back",
+          description: "Signed in successfully.",
+        });
+        navigate("/");
+      } else {
+        await registerUser({ fullName: name, email, password });
+        setPendingVerificationEmail(email);
+        toast({
+          title: "Verification code sent",
+          description: "Check your email and enter the 6-digit code.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Authentication failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingVerificationEmail) {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await verifyRegistrationCode({
+        email: pendingVerificationEmail,
+        code: verificationCode,
+      });
+      toast({
+        title: "Account verified",
+        description: "Your account is now active.",
+      });
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Verification failed",
+        description: error instanceof Error ? error.message : "Invalid code.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const toggleMode = () => {
+    setPendingVerificationEmail(null);
+    setVerificationCode("");
     const nextIsLogin = !isLoginMode;
     setIsLoginMode(nextIsLogin);
     setSearchParams(nextIsLogin ? {} : { mode: "signup" });
@@ -43,6 +105,41 @@ const LoginPage = () => {
             </p>
           </div>
 
+          {pendingVerificationEmail ? (
+            <form onSubmit={handleVerifyCode} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Enter the 6-digit code sent to <strong>{pendingVerificationEmail}</strong>
+              </p>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={verificationCode}
+                onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, ""))}
+                placeholder="123456"
+                className="w-full border border-border bg-background px-4 py-3 text-sm outline-none focus:border-foreground/40 transition-colors rounded-sm tracking-[0.35em] text-center"
+                required
+              />
+              <button
+                type="submit"
+                disabled={isSubmitting || verificationCode.length !== 6}
+                className="w-full bg-foreground text-background py-3 text-sm font-normal hover:bg-foreground/90 transition-colors rounded-sm disabled:opacity-50"
+              >
+                {isSubmitting ? "Verifying..." : "Verify Account"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingVerificationEmail(null);
+                  setVerificationCode("");
+                }}
+                className="w-full border border-border py-3 text-sm hover:bg-secondary transition-colors rounded-sm"
+              >
+                Back
+              </button>
+            </form>
+          ) : (
+            <>
           {/* Google OAuth Button */}
           <button
             className="w-full border border-border hover:bg-secondary transition-colors px-4 py-3 rounded-sm mb-6 flex items-center justify-center gap-3 text-sm font-normal"
@@ -150,9 +247,10 @@ const LoginPage = () => {
 
             <button
               type="submit"
+              disabled={isSubmitting}
               className="w-full bg-foreground text-background py-3 text-sm font-normal hover:bg-foreground/90 transition-colors rounded-sm mt-6"
             >
-              {isLoginMode ? "Sign In" : "Create Account"}
+              {isSubmitting ? "Please wait..." : isLoginMode ? "Sign In" : "Create Account"}
             </button>
           </form>
 
@@ -169,6 +267,8 @@ const LoginPage = () => {
               </button>
             </p>
           </div>
+            </>
+          )}
         </div>
       </div>
     </PageLayout>
