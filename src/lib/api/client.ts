@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const configuredApiBase = import.meta.env.VITE_API_URL?.trim();
+const API_BASE_URL = configuredApiBase || (import.meta.env.DEV ? "http://localhost:4000" : "");
 
 export const getApiBaseUrl = () => API_BASE_URL;
 

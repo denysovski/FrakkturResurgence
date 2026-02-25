@@ -26,6 +26,8 @@ import CustomCursor from "./components/CustomCursor";
 import SearchResultsPage from "./pages/SearchResultsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
+import WishlistPage from "./pages/WishlistPage";
+import OrdersPage from "./pages/OrdersPage";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +52,8 @@ const App = () => (
           <Route path="/search" element={<SearchResultsPage />} />
           <Route path="/product/:categoryKey/:productId" element={<ProductDetailPage />} />
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
           
           {/* Auth */}
           <Route path="/auth/login" element={<LoginPage />} />

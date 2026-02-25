@@ -1,14 +1,19 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageLayout from "@/pages/PageLayout";
 import { catalogCategories, getAllProducts } from "@/lib/catalog";
 import SEO from "@/components/SEO";
+import { addToWishlist } from "@/lib/wishlist";
+import { getStoredUser, type AuthUser } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 const SearchResultsPage = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const initial = params.get("q") || "";
   const [query, setQuery] = useState(initial);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const { toast } = useToast();
 
   const normalized = initial.trim().toLowerCase();
 
@@ -35,6 +40,34 @@ const SearchResultsPage = () => {
     event.preventDefault();
     const trimmed = query.trim();
     navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+  };
+
+  useEffect(() => {
+    const syncAuth = () => setCurrentUser(getStoredUser());
+    syncAuth();
+
+    window.addEventListener("frakktur:auth-updated", syncAuth as EventListener);
+    window.addEventListener("focus", syncAuth);
+
+    return () => {
+      window.removeEventListener("frakktur:auth-updated", syncAuth as EventListener);
+      window.removeEventListener("focus", syncAuth);
+    };
+  }, []);
+
+  const handleAddToWishlist = async (categoryKey: string, productId: string, name: string) => {
+    try {
+      await addToWishlist(categoryKey, productId);
+      toast({
+        title: "Added to wishlist",
+        description: `${name} added to your wishlist.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Sign in required",
+        description: error instanceof Error ? error.message : "Please sign in to add items to wishlist.",
+      });
+    }
   };
 
   return (
@@ -96,19 +129,33 @@ const SearchResultsPage = () => {
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                   {productResults.map((product, idx) => (
-                    <button
+                    <div
                       key={`${product.categoryKey}-${product.id}`}
-                      type="button"
-                      onClick={() => navigate(`/product/${product.categoryKey}/${product.id}`)}
                       className="text-left group animate-fade-in-up"
                       style={{ animationDelay: `${idx * 0.08}s` }}
                     >
-                      <div className="aspect-square bg-secondary overflow-hidden mb-2">
-                        <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      </div>
-                      <p className="text-sm leading-tight">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">{product.categoryTitle} · {product.price}</p>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/product/${product.categoryKey}/${product.id}`)}
+                        className="w-full text-left"
+                      >
+                        <div className="aspect-square bg-secondary overflow-hidden mb-2">
+                          <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        </div>
+                        <p className="text-sm leading-tight">{product.name}</p>
+                        <p className="text-xs text-muted-foreground">{product.categoryTitle} · {product.price}</p>
+                      </button>
+
+                      {currentUser && (
+                        <button
+                          type="button"
+                          onClick={() => void handleAddToWishlist(product.categoryKey, product.id, product.name)}
+                          className="mt-2 text-xs underline underline-offset-4 hover:opacity-70"
+                        >
+                          Add to wishlist
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}

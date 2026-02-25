@@ -2,11 +2,9 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
-import crypto from "node:crypto";
 import { initDb } from "./initDb.js";
 import { query } from "./db.js";
 import { requireAuth, signAuthToken } from "./auth.js";
-import { sendVerificationCodeEmail } from "./mail.js";
 
 dotenv.config();
 
@@ -43,6 +41,8 @@ app.use((req, res, next) => {
 });
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NAME_RE = /^[a-zA-ZÀ-ž' -]{2,120}$/;
+const PASSWORD_POLICY_RE = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/;
 const CATEGORY_RE = /^[a-z-]{2,40}$/;
 const PRODUCT_CODE_RE = /^[a-zA-Z0-9-]{1,40}$/;
 const SIZE_RE = /^[A-Z0-9-]{1,16}$/;
@@ -82,7 +82,6 @@ const createRateLimiter = ({ name, windowMs, maxHits }) =>
   };
 
 const authLimiter = createRateLimiter({ name: "auth", windowMs: 15 * 60 * 1000, maxHits: 25 });
-const verifyLimiter = createRateLimiter({ name: "verify", windowMs: 15 * 60 * 1000, maxHits: 20 });
 const writeLimiter = createRateLimiter({ name: "write", windowMs: 60 * 1000, maxHits: 120 });
 
 const formatPrice = (priceCents) => `€${(Number(priceCents) / 100).toFixed(2)}`;
@@ -100,8 +99,6 @@ const parsePositiveInt = (value) => {
   }
   return parsed;
 };
-
-const generateOtpCode = () => String(crypto.randomInt(100000, 1000000));
 
 const mapProductRow = (row) => ({
   dbId: row.id,
@@ -139,117 +136,43 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
       return res.status(400).json({ error: "Name must be at least 2 characters." });
     }
 
-    if (password.length < 8 || password.length > 72) {
-      return res.status(400).json({ error: "Password must be 8-72 characters." });
+    if (!NAME_RE.test(fullName)) {
+      return res.status(400).json({ error: "Name contains invalid characters." });
     }
 
-    const existingRows = await query(`SELECT id, status FROM users WHERE email = ? LIMIT 1`, [email]);
+    if (!PASSWORD_POLICY_RE.test(password)) {
+      return res.status(400).json({
+        error: "Password must be 8-72 characters and include 1 uppercase letter, 1 number, and 1 special character.",
+      });
+    }
 
-    let userId;
+    const existingRows = await query(`SELECT id FROM users WHERE email = ? LIMIT 1`, [email]);
+    if (existingRows.length) {
+      return res.status(409).json({ error: "Email is already registered." });
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
 
-    if (existingRows.length) {
-      const existing = existingRows[0];
-      if (existing.status === "active") {
-        return res.status(409).json({ error: "Email is already registered." });
-      }
-
-      userId = existing.id;
-      await query(
-        `UPDATE users SET full_name = ?, password_hash = ?, status = 'inactive' WHERE id = ?`,
-        [fullName, passwordHash, userId],
-      );
-    } else {
-      const insertResult = await query(
-        `INSERT INTO users (email, full_name, password_hash, status) VALUES (?, ?, ?, 'inactive')`,
-        [email, fullName, passwordHash],
-      );
-      userId = insertResult.insertId;
-    }
-
-    const code = generateOtpCode();
-    const codeHash = await bcrypt.hash(code, 10);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-    await query(`DELETE FROM user_verification_codes WHERE user_id = ?`, [userId]);
-    await query(
-      `INSERT INTO user_verification_codes (user_id, code_hash, expires_at) VALUES (?, ?, ?)`,
-      [userId, codeHash, expiresAt],
+    const insertResult = await query(
+      `INSERT INTO users (email, full_name, password_hash, status) VALUES (?, ?, ?, 'active')`,
+      [email, fullName, passwordHash],
     );
 
-    await sendVerificationCodeEmail({ to: email, code });
+    const token = signAuthToken({ userId: insertResult.insertId, email });
 
     return res.status(201).json({
-      message: "Verification code sent to your email.",
-      requiresVerification: true,
-      email,
-    });
-  } catch (error) {
-    console.error("Register error");
-    return res.status(500).json({ error: "Failed to register user." });
-  }
-});
-
-app.post("/api/auth/verify", verifyLimiter, async (req, res) => {
-  try {
-    const email = normalizeEmail(req.body.email);
-    const code = String(req.body.code || "").trim();
-
-    if (!EMAIL_RE.test(email) || !/^\d{6}$/.test(code)) {
-      return res.status(400).json({ error: "Valid email and 6-digit code are required." });
-    }
-
-    const userRows = await query(`SELECT id, email, full_name, status FROM users WHERE email = ? LIMIT 1`, [email]);
-    if (!userRows.length) {
-      return res.status(404).json({ error: "User not found." });
-    }
-
-    const user = userRows[0];
-    const codeRows = await query(
-      `SELECT id, code_hash, expires_at, consumed_at
-       FROM user_verification_codes
-       WHERE user_id = ?
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [user.id],
-    );
-
-    if (!codeRows.length) {
-      return res.status(400).json({ error: "No verification code found." });
-    }
-
-    const codeRow = codeRows[0];
-    if (codeRow.consumed_at) {
-      return res.status(400).json({ error: "Code already used." });
-    }
-
-    if (new Date(codeRow.expires_at).getTime() < Date.now()) {
-      return res.status(400).json({ error: "Verification code has expired." });
-    }
-
-    const isMatch = await bcrypt.compare(code, codeRow.code_hash);
-    if (!isMatch) {
-      return res.status(400).json({ error: "Invalid verification code." });
-    }
-
-    await query(`UPDATE users SET status = 'active' WHERE id = ?`, [user.id]);
-    await query(`UPDATE user_verification_codes SET consumed_at = NOW() WHERE id = ?`, [codeRow.id]);
-
-    const token = signAuthToken({ userId: user.id, email: user.email });
-
-    return res.json({
-      message: "Account verified successfully.",
+      message: "Account created successfully.",
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.full_name,
+        id: insertResult.insertId,
+        email,
+        fullName,
         status: "active",
       },
     });
   } catch (error) {
-    console.error("Verify error");
-    return res.status(500).json({ error: "Failed to verify account." });
+    console.error("Register error");
+    return res.status(500).json({ error: "Failed to register user." });
   }
 });
 
@@ -272,10 +195,6 @@ app.post("/api/auth/login", authLimiter, async (req, res) => {
 
     if (!isPasswordMatch) {
       return res.status(401).json({ error: "Invalid email or password." });
-    }
-
-    if (user.status !== "active") {
-      return res.status(403).json({ error: "Account is inactive. Please verify your email first.", requiresVerification: true });
     }
 
     const token = signAuthToken({ userId: user.id, email: user.email });

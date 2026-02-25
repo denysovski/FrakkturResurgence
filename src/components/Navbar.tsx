@@ -1,14 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Menu, Search, User, X, Heart, ShoppingCart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import LocaleDropdown from "./LocaleDropdown";
 import CartSidebar from "./CartSidebar";
 import { readCart, type CartItem } from "@/lib/cart";
+import { getStoredUser, logoutUser, type AuthUser } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
+import { getAllProducts } from "@/lib/catalog";
 
-import product1 from "@/assets/product-1.jpg";
-import product2 from "@/assets/product-2.jpg";
-import product3 from "@/assets/product-3.jpg";
-import product4 from "@/assets/product-4.jpg";
 import logoInvert from "@/assets/frakktur-icon-invert.png";
 
 const primaryMenuLinks = [
@@ -28,12 +27,13 @@ const secondaryMenuLinks = [
   { label: "Sustainability program", href: "/sustainability" },
 ];
 
-const latestProducts = [
-  { name: "Essential Tee", price: "€49.00", image: product1 },
-  { name: "Stealth Cap", price: "€35.00", image: product2 },
-  { name: "Graphic Hoodie", price: "€89.00", image: product3 },
-  { name: "Crossbody Bag", price: "€65.00", image: product4 },
-];
+type LatestProduct = {
+  id: string;
+  categoryKey: string;
+  name: string;
+  price: string;
+  image: string;
+};
 
 type CountryOption = { value: string; flag: string };
 
@@ -66,8 +66,26 @@ export default function Navbar({
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const latestProducts = useMemo<LatestProduct[]>(() => {
+    const allowedCategories = new Set(["tshirts", "hoodies", "caps", "belts"]);
+    const candidates = getAllProducts().filter((product) => allowedCategories.has(product.categoryKey));
+    const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+
+    return shuffled.slice(0, 4).map((product) => ({
+      id: product.id,
+      categoryKey: product.categoryKey,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+    }));
+  }, []);
 
   useEffect(() => {
     const onScroll = () => {
@@ -78,6 +96,36 @@ export default function Navbar({
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const syncAuth = () => {
+      setCurrentUser(getStoredUser());
+    };
+
+    syncAuth();
+    window.addEventListener("frakktur:auth-updated", syncAuth as EventListener);
+    window.addEventListener("focus", syncAuth);
+
+    return () => {
+      window.removeEventListener("frakktur:auth-updated", syncAuth as EventListener);
+      window.removeEventListener("focus", syncAuth);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onPointerDown = (event: MouseEvent) => {
+      if (!userMenuRef.current) {
+        return;
+      }
+
+      if (!userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", onPointerDown);
+    return () => window.removeEventListener("mousedown", onPointerDown);
   }, []);
 
   useEffect(() => {
@@ -149,9 +197,22 @@ export default function Navbar({
     navigate(`/search?q=${encodeURIComponent(trimmed)}`);
   };
 
-  const navHasBackground = scrolled || dropdownOpen;
+  const navHasBackground = scrolled || dropdownOpen || userMenuOpen;
   const navItemColor = forceBlackText ? "text-foreground" : (navHasBackground ? "text-foreground" : "text-primary-foreground");
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const nicknameRaw = (currentUser?.fullName || "there").trim();
+  const nickname = nicknameRaw.length > 20 ? `${nicknameRaw.slice(0, 20)}...` : nicknameRaw;
+
+  const handleLogout = () => {
+    logoutUser();
+    setCurrentUser(null);
+    setUserMenuOpen(false);
+    toast({
+      title: "Signed out",
+      description: "You have been logged out.",
+    });
+    navigate("/");
+  };
 
   return (
     <>
@@ -207,9 +268,59 @@ export default function Navbar({
               <Search className="w-5 h-5" />
             </button>
 
-            <Link to="/auth/login?mode=signup" className="hidden md:block p-1 transition-transform duration-200 hover:scale-110" aria-label="Login">
-              <User className="w-5 h-5" />
-            </Link>
+            <div className="relative" ref={userMenuRef}>
+              {currentUser ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setUserMenuOpen((prev) => !prev)}
+                    className="p-1 transition-transform duration-200 hover:scale-110"
+                    aria-label="Account menu"
+                  >
+                    <User className="w-5 h-5" />
+                  </button>
+
+                  {userMenuOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 rounded-sm border border-border bg-background shadow-md z-[70] text-foreground">
+                      <div className="px-3 py-2 border-b border-border text-xs text-muted-foreground">
+                        Hi @{nickname}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          navigate("/orders");
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                      >
+                        My orders
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          navigate("/wishlist");
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                      >
+                        Wishlist
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-secondary transition-colors"
+                      >
+                        Log out
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link to="/auth/login?mode=signup" className="block p-1 transition-transform duration-200 hover:scale-110" aria-label="Login">
+                  <User className="w-5 h-5" />
+                </Link>
+              )}
+            </div>
 
             <button
               onClick={() => setCartOpen(true)}
@@ -321,13 +432,21 @@ export default function Navbar({
               <p className="micro-text text-muted-foreground mb-4">Latest Products</p>
               <div className="grid grid-cols-2 gap-3">
                 {latestProducts.map((p) => (
-                  <a key={p.name} href="#" className="group">
+                  <button
+                    key={`${p.categoryKey}:${p.id}`}
+                    type="button"
+                    onClick={() => {
+                      closeSearch();
+                      navigate(`/product/${p.categoryKey}/${p.id}`);
+                    }}
+                    className="group text-left"
+                  >
                     <div className="aspect-square overflow-hidden bg-secondary mb-2">
                       <img src={p.image} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     </div>
                     <p className="text-xs">{p.name}</p>
                     <p className="text-xs text-muted-foreground">{p.price}</p>
-                  </a>
+                  </button>
                 ))}
               </div>
             </div>

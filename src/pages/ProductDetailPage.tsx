@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import { fetchProductByCategoryAndId } from "@/lib/productsApi";
 import { addToWishlist } from "@/lib/wishlist";
+import { getStoredUser, type AuthUser } from "@/lib/auth";
 
 const ProductDetailPage = () => {
   const { categoryKey, productId } = useParams();
@@ -25,6 +26,7 @@ const ProductDetailPage = () => {
   const [dbSizes, setDbSizes] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
   // Scroll to top when product changes
   useEffect(() => {
@@ -55,6 +57,19 @@ const ProductDetailPage = () => {
 
     void loadProductFromDb();
   }, [safeCategory, productId]);
+
+  useEffect(() => {
+    const syncAuth = () => setCurrentUser(getStoredUser());
+    syncAuth();
+
+    window.addEventListener("frakktur:auth-updated", syncAuth as EventListener);
+    window.addEventListener("focus", syncAuth);
+
+    return () => {
+      window.removeEventListener("frakktur:auth-updated", syncAuth as EventListener);
+      window.removeEventListener("focus", syncAuth);
+    };
+  }, []);
 
   const recentlyViewed = useMemo(() => {
     if (!product || !safeCategory) {
@@ -239,14 +254,16 @@ const ProductDetailPage = () => {
                 <ShoppingBag className="w-4 h-4" />
                 Add to cart
               </button>
-              <button
-                type="button"
-                onClick={handleAddToWishlist}
-                className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3 text-sm hover:bg-secondary transition-colors"
-              >
-                <Heart className="w-4 h-4" />
-                Add to wishlist
-              </button>
+              {currentUser && (
+                <button
+                  type="button"
+                  onClick={handleAddToWishlist}
+                  className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3 text-sm hover:bg-secondary transition-colors"
+                >
+                  <Heart className="w-4 h-4" />
+                  Add to wishlist
+                </button>
+              )}
             </div>
 
             <div className="border-t border-border pt-8 mb-8 animate-fade-in-up-2">
@@ -355,14 +372,16 @@ const ProductDetailPage = () => {
                 <ShoppingBag className="w-4 h-4" />
                 Add to cart
               </button>
-              <button
-                type="button"
-                onClick={handleAddToWishlist}
-                className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3 text-sm hover:bg-secondary transition-colors"
-              >
-                <Heart className="w-4 h-4" />
-                Add to wishlist
-              </button>
+              {currentUser && (
+                <button
+                  type="button"
+                  onClick={handleAddToWishlist}
+                  className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3 text-sm hover:bg-secondary transition-colors"
+                >
+                  <Heart className="w-4 h-4" />
+                  Add to wishlist
+                </button>
+              )}
             </div>
 
             <div className="animate-fade-in-up-2">
@@ -465,14 +484,16 @@ const ProductDetailPage = () => {
               <ShoppingBag className="w-4 h-4" />
               Add to cart
             </button>
+            {currentUser && (
               <button
                 type="button"
                 onClick={handleAddToWishlist}
-              className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3 text-sm hover:bg-secondary transition-colors"
-            >
-              <Heart className="w-4 h-4" />
-              Add to wishlist
-            </button>
+                className="inline-flex items-center justify-center gap-2 border border-border px-5 py-3 text-sm hover:bg-secondary transition-colors"
+              >
+                <Heart className="w-4 h-4" />
+                Add to wishlist
+              </button>
+            )}
           </div>
 
           <div className="border-t border-border pt-6 mb-8 animate-fade-in-up-2">

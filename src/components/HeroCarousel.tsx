@@ -35,6 +35,7 @@ const slides = [
 export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
   const [textKey, setTextKey] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   const next = useCallback(() => {
     setCurrent((prev) => (prev + 1) % slides.length);
@@ -51,6 +52,34 @@ export default function HeroCarousel() {
     return () => clearInterval(interval);
   }, [next]);
 
+  useEffect(() => {
+    let rafId = 0;
+
+    const onScroll = () => {
+      if (rafId) {
+        return;
+      }
+
+      rafId = window.requestAnimationFrame(() => {
+        const progress = Math.min(Math.max(window.scrollY / Math.max(window.innerHeight, 1), 0), 1);
+        setScrollProgress(progress);
+        rafId = 0;
+      });
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, []);
+
+  const overlayOpacity = 0.15 + scrollProgress * 0.35;
+
   return (
     <section className="relative w-full h-screen overflow-hidden">
       {slides.map((slide, i) => (
@@ -62,12 +91,16 @@ export default function HeroCarousel() {
           <img
             src={slide.image}
             alt={`${slide.title} - Frakktur luxury streetwear collection`}
-            className={`w-full h-full object-cover transition-transform duration-[8000ms] ease-out ${i === current ? "scale-110" : "scale-100"}`}
+            className="w-full h-full object-cover transition-transform duration-300 ease-out"
+            style={{
+              transform: `scale(${(i === current ? 1.1 : 1) + scrollProgress * 0.08})`,
+            }}
           />
         </div>
       ))}
 
       <div className="overlay-dark" />
+      <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: overlayOpacity }} />
       <div className="absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-black/85 to-transparent z-[1]" />
       <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/70 to-transparent z-[1]" />
 

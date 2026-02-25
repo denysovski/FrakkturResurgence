@@ -3,6 +3,9 @@ import { ChevronLeft, ChevronRight, Filter, Sparkles, TrendingUp, Star, DollarSi
 import { useNavigate } from "react-router-dom";
 import type { CategoryKey } from "@/lib/catalog";
 import SEO from "@/components/SEO";
+import { addToWishlist } from "@/lib/wishlist";
+import { getStoredUser, type AuthUser } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface CollectionProduct {
   id: string;
@@ -37,11 +40,26 @@ const CollectionPage = ({
   const [sortBy, setSortBy] = useState("newest");
   const [gridCols, setGridCols] = useState(4);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
+    const syncAuth = () => setCurrentUser(getStoredUser());
+    syncAuth();
+
+    window.addEventListener("frakktur:auth-updated", syncAuth as EventListener);
+    window.addEventListener("focus", syncAuth);
+
+    return () => {
+      window.removeEventListener("frakktur:auth-updated", syncAuth as EventListener);
+      window.removeEventListener("focus", syncAuth);
+    };
   }, []);
 
   // Sort products based on selected option
@@ -79,6 +97,21 @@ const CollectionPage = ({
   };
 
   const pageNumbers = getPageNumbers();
+
+  const handleAddToWishlist = async (productId: string, name: string) => {
+    try {
+      await addToWishlist(categoryKey, productId);
+      toast({
+        title: "Added to wishlist",
+        description: `${name} added to your wishlist.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Sign in required",
+        description: error instanceof Error ? error.message : "Please sign in to add items to wishlist.",
+      });
+    }
+  };
 
   return (
     <div className="pt-24 pb-16 px-6 md:px-10">
@@ -190,25 +223,39 @@ const CollectionPage = ({
         gridCols === 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3"
       }`}>
         {visibleProducts.map((product, idx) => (
-          <button
+          <div
             key={product.id}
-            type="button"
-            onClick={() => navigate(`/product/${categoryKey}/${product.id}`)}
             className="group text-left animate-fade-in-up"
             style={{ animationDelay: `${idx * 0.08}s` }}
           >
-            <div className="aspect-square overflow-hidden bg-secondary mb-4 animate-fade-in-image">
-              <img
-                src={product.image}
-                alt={`${product.name} - ${title.toLowerCase()} for sale at Frakktur luxury streetwear`}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-            </div>
-            <h3 className="text-sm font-normal mb-2 group-hover:opacity-70 transition-opacity">
-              {product.name}
-            </h3>
-            <p className="text-sm text-muted-foreground">{product.price}</p>
-          </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/product/${categoryKey}/${product.id}`)}
+              className="w-full text-left"
+            >
+              <div className="aspect-square overflow-hidden bg-secondary mb-4 animate-fade-in-image">
+                <img
+                  src={product.image}
+                  alt={`${product.name} - ${title.toLowerCase()} for sale at Frakktur luxury streetwear`}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+              <h3 className="text-sm font-normal mb-2 group-hover:opacity-70 transition-opacity">
+                {product.name}
+              </h3>
+              <p className="text-sm text-muted-foreground">{product.price}</p>
+            </button>
+
+            {currentUser && (
+              <button
+                type="button"
+                onClick={() => void handleAddToWishlist(product.id, product.name)}
+                className="mt-2 text-xs underline underline-offset-4 hover:opacity-70 transition-opacity"
+              >
+                Add to wishlist
+              </button>
+            )}
+          </div>
         ))}
       </div>
 
