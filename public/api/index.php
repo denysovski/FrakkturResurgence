@@ -6,6 +6,19 @@ require_once __DIR__ . '/lib/response.php';
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/auth.php';
 
+$isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+session_set_cookie_params([
+    'lifetime' => 60 * 60 * 12,
+    'path' => '/frakkturresurgence',
+    'secure' => $isHttps,
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -19,6 +32,7 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $path = preg_replace('#^/frakkturresurgence#', '', $path);
 $path = preg_replace('#^/api#', '', $path);
+$path = preg_replace('#^/index\.php#', '', (string) $path);
 $path = '/' . ltrim((string) $path, '/');
 
 $emailRe = '/^[^\s@]+@[^\s@]+\.[^\s@]+$/';
@@ -65,11 +79,11 @@ try {
         $insert->execute([$email, $fullName, $hash]);
         $userId = (int) $pdo->lastInsertId();
 
-        $token = create_session_token($pdo, $userId);
+        $_SESSION['user_id'] = $userId;
 
         json_response([
             'message' => 'Account created successfully.',
-            'token' => $token,
+            'token' => 'session',
             'user' => [
                 'id' => $userId,
                 'email' => $email,
@@ -96,10 +110,10 @@ try {
             error_response('Invalid email or password.', 401);
         }
 
-        $token = create_session_token($pdo, (int) $user['id']);
+        $_SESSION['user_id'] = (int) $user['id'];
 
         json_response([
-            'token' => $token,
+            'token' => 'session',
             'user' => [
                 'id' => (int) $user['id'],
                 'email' => (string) $user['email'],
@@ -123,6 +137,16 @@ try {
                 'status' => (string) $user['status'],
             ],
         ]);
+    }
+
+    if ($method === 'POST' && $path === '/auth/logout') {
+        $_SESSION = [];
+        if (ini_get('session.use_cookies')) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000, $params['path'] ?? '/', $params['domain'] ?? '', (bool) ($params['secure'] ?? false), (bool) ($params['httponly'] ?? true));
+        }
+        session_destroy();
+        json_response(['ok' => true]);
     }
 
     if ($method === 'GET' && preg_match('#^/categories/([a-z\-]{2,40})/products$#', $path, $m)) {

@@ -31,6 +31,16 @@ const API_BASE_CANDIDATES = getCandidateApiBases();
 
 export const getApiBaseUrl = () => API_BASE_CANDIDATES[0] || "";
 
+const buildRequestUrls = (base: string, path: string) => {
+  const urls = [`${base}${path}`];
+
+  if (path.startsWith("/api/") && !path.startsWith("/api/index.php/")) {
+    urls.push(`${base}${path.replace("/api/", "/api/index.php/")}`);
+  }
+
+  return [...new Set(urls)];
+};
+
 export const getAuthToken = () => {
   if (typeof window === "undefined") {
     return null;
@@ -66,38 +76,47 @@ export const apiFetch = async (path: string, options: RequestInit = {}) => {
   let lastError: Error | null = null;
 
   for (const base of API_BASE_CANDIDATES) {
-    try {
-      const response = await fetch(`${base}${normalizedPath}`, {
-        ...options,
-        headers,
-      });
+    const candidateUrls = buildRequestUrls(base, normalizedPath);
 
-      const contentType = response.headers.get("content-type") || "";
-      const isJsonResponse = contentType.toLowerCase().includes("application/json");
-      const data = await response.json().catch(() => ({}));
-      if (response.ok) {
-        if (!isJsonResponse) {
-          throw new Error("API returned non-JSON response. Check backend URL/proxy configuration.");
+    for (const requestUrl of candidateUrls) {
+      try {
+        const response = await fetch(requestUrl, {
+          ...options,
+          headers,
+          credentials: "include",
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+        const isJsonResponse = contentType.toLowerCase().includes("application/json");
+        const data = await response.json().catch(() => ({}));
+        if (response.ok) {
+          if (!isJsonResponse) {
+            throw new Error("API returned non-JSON response. Check backend URL/proxy configuration.");
+          }
+          return data;
         }
-        return data;
-      }
 
-      const message = typeof data?.error === "string"
-        ? data.error
-        : response.status === 404
-          ? "API endpoint not found. Check VITE_API_URL/backend route configuration."
-          : `Request failed (${response.status})`;
+        const message = typeof data?.error === "string"
+          ? data.error
+          : response.status === 404
+            ? "API endpoint not found. Check VITE_API_URL/backend route configuration."
+            : `Request failed (${response.status})`;
 
-      if (response.status === 404 && base !== API_BASE_CANDIDATES[API_BASE_CANDIDATES.length - 1]) {
-        lastError = new Error(message);
-        continue;
-      }
+        const isLastUrl = requestUrl === candidateUrls[candidateUrls.length - 1];
+        const isLastBase = base === API_BASE_CANDIDATES[API_BASE_CANDIDATES.length - 1];
+        if (response.status === 404 && (!isLastUrl || !isLastBase)) {
+          lastError = new Error(message);
+          continue;
+        }
 
-      throw new Error(message);
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error("Request failed");
-      if (base === API_BASE_CANDIDATES[API_BASE_CANDIDATES.length - 1]) {
-        throw lastError;
+        throw new Error(message);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error("Request failed");
+        const isLastUrl = requestUrl === candidateUrls[candidateUrls.length - 1];
+        const isLastBase = base === API_BASE_CANDIDATES[API_BASE_CANDIDATES.length - 1];
+        if (isLastUrl && isLastBase) {
+          throw lastError;
+        }
       }
     }
   }

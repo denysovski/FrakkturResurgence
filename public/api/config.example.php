@@ -6,5 +6,5 @@ declare(strict_types=1);
 define('FRAKKTUR_DB_HOST', 'db.db049.endora.cz');
 define('FRAKKTUR_DB_PORT', '3306');
 define('FRAKKTUR_DB_NAME', 'ppdatabase');
-define('FRAKKTUR_DB_USER', 'your_db_user');
-define('FRAKKTUR_DB_PASSWORD', 'your_db_password');
+define('FRAKKTUR_DB_USER', 'testdomainpp');
+define('FRAKKTUR_DB_PASSWORD', 'Frakktur12354G@');
