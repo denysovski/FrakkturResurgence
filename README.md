@@ -68,8 +68,6 @@ Do **not** upload source/dev files like `src/`, `node_modules/`, `.env*`, `packa
 
 Import `sql/FULL_IMPORT_ENDORA_SHARED.sql` in phpMyAdmin before first launch.
 
-For auth-only setup from zero, import `sql/AUTH_MINIMAL.sql`.
-
 ### 5) Backend auth DB credentials (Endora)
 
 1. Create `public/config.php`.

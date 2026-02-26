@@ -4,7 +4,7 @@
 Import:
 - `sql/FULL_IMPORT_ENDORA_SHARED.sql`
 
-## 2) Frontend + PHP API (Endora WebFTP)
+## 2) Frontend + PHP auth (Endora WebFTP)
 Upload the contents of `dist/` into `/web/frakkturresurgence/`:
 - `index.html`
 - `.htaccess`
@@ -12,7 +12,9 @@ Upload the contents of `dist/` into `/web/frakkturresurgence/`:
 - `favicon.ico`
 - `robots.txt`
 - `placeholder.svg`
-- `api/`
+- `auth.php`
+- `lib/db.php`
+- `config.php`
 
 ## 3) Configure frontend base
 In root `.env.production` set:
