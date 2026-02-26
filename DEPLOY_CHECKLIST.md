@@ -14,10 +14,9 @@ Upload the contents of `dist/` into `/web/frakkturresurgence/`:
 - `placeholder.svg`
 - `api/`
 
-## 3) Configure frontend API base
+## 3) Configure frontend base
 In root `.env.production` set:
 - `VITE_PUBLIC_BASE=/frakkturresurgence/`
-- `VITE_API_URL=`
 
 Then run:
 - `npm run build`

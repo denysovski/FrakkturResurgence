@@ -1,4 +1,3 @@
-import { apiFetch } from "@/lib/api/client";
 import { getStoredUser } from "@/lib/auth";
 import { getProductByCategoryAndId } from "@/lib/catalog";
 import type { CategoryKey } from "@/lib/catalog";
@@ -11,20 +10,6 @@ export type WishlistItem = {
   name: string;
   price: string;
   image: string;
-};
-
-const shouldUseLocalFallback = (error: unknown) => {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-
-  const message = error.message.toLowerCase();
-  return (
-    message.includes("failed to fetch") ||
-    message.includes("networkerror") ||
-    message.includes("load failed") ||
-    message.includes("request failed")
-  );
 };
 
 const getUserStorageKey = () => {
@@ -71,37 +56,12 @@ const emitWishlistUpdated = (items: WishlistItem[]) => {
 };
 
 export const readWishlist = async (): Promise<WishlistItem[]> => {
-  try {
-    const response = await apiFetch("/api/wishlist");
-    const items = response.items || [];
-    emitWishlistUpdated(items);
-    return items;
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) {
-      throw error;
-    }
-
-    const items = readLocalWishlist();
-    emitWishlistUpdated(items);
-    return items;
-  }
+  const items = readLocalWishlist();
+  emitWishlistUpdated(items);
+  return items;
 };
 
 export const addToWishlist = async (categoryKey: string, productCode: string) => {
-  try {
-    await apiFetch("/api/wishlist/items", {
-      method: "POST",
-      body: JSON.stringify({ categoryKey, productCode }),
-    });
-
-    await readWishlist();
-    return;
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) {
-      throw error;
-    }
-  }
-
   const existing = readLocalWishlist();
   const itemKey = `${categoryKey}:${productCode}`;
   if (existing.some((item) => item.key === itemKey)) {
@@ -126,19 +86,6 @@ export const addToWishlist = async (categoryKey: string, productCode: string) =>
 };
 
 export const removeFromWishlist = async (wishlistItemId: string) => {
-  try {
-    await apiFetch(`/api/wishlist/items/${wishlistItemId}`, {
-      method: "DELETE",
-    });
-
-    await readWishlist();
-    return;
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) {
-      throw error;
-    }
-  }
-
   const current = readLocalWishlist();
   const next = current.filter((item) => item.key !== wishlistItemId);
   writeLocalWishlist(next);

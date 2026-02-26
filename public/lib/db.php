@@ -27,8 +27,8 @@ function get_pdo(): PDO
     $host = env_value('DB_HOST', defined('FRAKKTUR_DB_HOST') ? FRAKKTUR_DB_HOST : 'db.db049.endora.cz');
     $port = env_value('DB_PORT', defined('FRAKKTUR_DB_PORT') ? FRAKKTUR_DB_PORT : '3306');
     $dbName = env_value('DB_NAME', defined('FRAKKTUR_DB_NAME') ? FRAKKTUR_DB_NAME : 'ppdatabase');
-    $user = env_value('DB_USER', defined('FRAKKTUR_DB_USER') ? FRAKKTUR_DB_USER : '');
-    $password = env_value('DB_PASSWORD', defined('FRAKKTUR_DB_PASSWORD') ? FRAKKTUR_DB_PASSWORD : '');
+    $user = env_value('DB_USER', defined('FRAKKTUR_DB_USER') ? FRAKKTUR_DB_USER : 'testdomainpp');
+    $password = env_value('DB_PASSWORD', defined('FRAKKTUR_DB_PASSWORD') ? FRAKKTUR_DB_PASSWORD : 'Frakktur12354G@');
 
     if ($user === '' || $password === '') {
         throw new RuntimeException('Database credentials are not configured.');

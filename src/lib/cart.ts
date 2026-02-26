@@ -1,5 +1,4 @@
 import type { CategoryKey } from "@/lib/catalog";
-import { apiFetch } from "@/lib/api/client";
 import { getProductByCategoryAndId } from "@/lib/catalog";
 import { getStoredUser } from "@/lib/auth";
 
@@ -18,20 +17,6 @@ const emitCartUpdated = (items: CartItem[]) => {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("frakktur:cart-updated", { detail: items }));
   }
-};
-
-const shouldUseLocalFallback = (error: unknown) => {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-
-  const message = error.message.toLowerCase();
-  return (
-    message.includes("failed to fetch") ||
-    message.includes("networkerror") ||
-    message.includes("load failed") ||
-    message.includes("request failed")
-  );
 };
 
 const getUserStorageKey = () => {
@@ -72,47 +57,12 @@ const writeLocalCart = (items: CartItem[]) => {
 };
 
 export const readCart = async (): Promise<CartItem[]> => {
-  try {
-    const response = await apiFetch("/api/cart");
-    const items = ((response.items || []) as CartItem[]).map((item) => {
-      const product = getProductByCategoryAndId(item.categoryKey as CategoryKey, item.id);
-      return {
-        ...item,
-        image: product?.image || item.image,
-      };
-    });
-    emitCartUpdated(items);
-    return items;
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) {
-      throw error;
-    }
-
-    const items = readLocalCart();
-    emitCartUpdated(items);
-    return items;
-  }
+  const items = readLocalCart();
+  emitCartUpdated(items);
+  return items;
 };
 
 export const addToCart = async (item: Omit<CartItem, "key">) => {
-  try {
-    await apiFetch("/api/cart/items", {
-      method: "POST",
-      body: JSON.stringify({
-        categoryKey: item.categoryKey,
-        productCode: item.id,
-        size: item.size,
-        quantity: item.quantity,
-      }),
-    });
-
-    return readCart();
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) {
-      throw error;
-    }
-  }
-
   const current = readLocalCart();
   const key = `${item.categoryKey}:${item.id}:${item.size}`;
   const existing = current.find((entry) => entry.key === key);
@@ -133,19 +83,6 @@ export const updateCartQuantity = async (key: string, quantity: number): Promise
     return removeFromCart(key);
   }
 
-  try {
-    await apiFetch(`/api/cart/items/${key}`, {
-      method: "PATCH",
-      body: JSON.stringify({ quantity }),
-    });
-
-    return readCart();
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) {
-      throw error;
-    }
-  }
-
   const current = readLocalCart();
   const next = current.map((item) => (item.key === key ? { ...item, quantity } : item));
   writeLocalCart(next);
@@ -154,18 +91,6 @@ export const updateCartQuantity = async (key: string, quantity: number): Promise
 };
 
 export const removeFromCart = async (key: string): Promise<CartItem[]> => {
-  try {
-    await apiFetch(`/api/cart/items/${key}`, {
-      method: "DELETE",
-    });
-
-    return readCart();
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) {
-      throw error;
-    }
-  }
-
   const current = readLocalCart();
   const next = current.filter((item) => item.key !== key);
   writeLocalCart(next);
@@ -174,21 +99,6 @@ export const removeFromCart = async (key: string): Promise<CartItem[]> => {
 };
 
 export const clearCart = async (): Promise<CartItem[]> => {
-  try {
-    const items = await readCart();
-    for (const item of items) {
-      await apiFetch(`/api/cart/items/${item.key}`, {
-        method: "DELETE",
-      });
-    }
-
-    return readCart();
-  } catch (error) {
-    if (!shouldUseLocalFallback(error)) {
-      throw error;
-    }
-  }
-
   writeLocalCart([]);
   emitCartUpdated([]);
   return [];

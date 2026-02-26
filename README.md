@@ -28,22 +28,15 @@ npm run build
 
 ## Deploy to shared hosting (WebFTP)
 
-### 1) Configure frontend API URL (before build)
+### 1) Configure frontend base path (before build)
 
 Create `.env.production` in the project root:
 
 ```dotenv
-VITE_API_URL=https://api.your-domain.com
 VITE_PUBLIC_BASE=/
 ```
 
 Use `VITE_PUBLIC_BASE=/` when app is in domain root. If app is inside a subfolder, set it to that folder with leading/trailing slash (example: `VITE_PUBLIC_BASE=/shop/`).
-
-If your API is served from the same domain under `/api`, you can also use:
-
-```dotenv
-VITE_API_URL=
-```
 
 ### 2) Build
 
