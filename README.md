@@ -72,8 +72,7 @@ Import `sql/FULL_IMPORT_ENDORA_SHARED.sql` in phpMyAdmin before first launch.
 
 1. Create `public/config.php`.
 2. Fill exact Endora DB values for host, port, db name, user, password.
-3. Optional: add `FRAKKTUR_DB_CHECK_KEY` for temporary DB diagnostics.
-4. Upload `public/config.php` to hosting.
+3. Upload `public/config.php` to hosting.
 
 `public/config.php` is git-ignored and must not be committed.
 
@@ -82,10 +81,6 @@ If you see `SQLSTATE[HY000] [1045] Access denied`:
 - Re-enter DB user/password manually (trim spaces, no extra quotes).
 - Confirm the DB user has privileges on the selected DB.
 - Save, upload, and retry `.../auth.php?action=me`.
-
-Optional DB check endpoint:
-- `.../db-check.php?key=YOUR_TEMP_KEY`
-- Returns `ok: true` when DB connection works.
 
 ## GitHub Pages deployment
 
