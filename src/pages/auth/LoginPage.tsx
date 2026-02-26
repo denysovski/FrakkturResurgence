@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NAME_RE = /^[a-zA-ZÀ-ž' -]{2,120}$/;
-const PASSWORD_POLICY_RE = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/;
+const PASSWORD_POLICY_RE = /^.{6,72}$/;
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -77,7 +77,7 @@ const LoginPage = () => {
         }
 
         if (!PASSWORD_POLICY_RE.test(password)) {
-          throw new Error("Password must be 8-72 characters and include 1 uppercase letter, 1 number, and 1 special character.");
+          throw new Error("Password must be 6-72 characters.");
         }
 
         await registerUser({ fullName: trimmedName, email: trimmedEmail, password });
@@ -197,7 +197,7 @@ const LoginPage = () => {
               </div>
               {!isLoginMode && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Use 8+ characters with 1 uppercase letter, 1 number, and 1 special character.
+                  Use at least 6 characters.
                 </p>
               )}
             </div>

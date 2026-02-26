@@ -43,8 +43,6 @@ function read_json_body(): array
 }
 
 $emailRe = '/^[^\s@]+@[^\s@]+\.[^\s@]+$/';
-$nameRe = '/^[a-zA-ZÀ-ž\'\- ]{2,120}$/u';
-$passwordRe = '/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/';
 
 $action = strtolower(trim((string) ($_GET['action'] ?? '')));
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -58,7 +56,7 @@ try {
             error_response('Unauthorized', 401);
         }
 
-        $stmt = $pdo->prepare('SELECT id, email, full_name, status FROM users WHERE id = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, email, full_name FROM users WHERE id = ? LIMIT 1');
         $stmt->execute([(int) $userId]);
         $user = $stmt->fetch();
 
@@ -71,7 +69,7 @@ try {
                 'id' => (int) $user['id'],
                 'email' => (string) $user['email'],
                 'fullName' => (string) $user['full_name'],
-                'status' => (string) $user['status'],
+                'status' => 'active',
             ],
         ]);
     }
@@ -90,12 +88,12 @@ try {
             error_response('Invalid email format.', 400);
         }
 
-        if (!preg_match($nameRe, $fullName)) {
-            error_response('Name must be 2-120 characters and valid.', 400);
+        if (mb_strlen($fullName) < 2 || mb_strlen($fullName) > 120) {
+            error_response('Name must be 2-120 characters.', 400);
         }
 
-        if (!preg_match($passwordRe, $password)) {
-            error_response('Password must be 8-72 chars with uppercase, number, and special character.', 400);
+        if (strlen($password) < 6 || strlen($password) > 72) {
+            error_response('Password must be 6-72 characters.', 400);
         }
 
         $exists = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
@@ -105,7 +103,7 @@ try {
         }
 
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
-        $insert = $pdo->prepare("INSERT INTO users (email, full_name, password_hash, status) VALUES (?, ?, ?, 'active')");
+        $insert = $pdo->prepare('INSERT INTO users (email, full_name, password_hash) VALUES (?, ?, ?)');
         $insert->execute([$email, $fullName, $passwordHash]);
         $userId = (int) $pdo->lastInsertId();
 
@@ -130,7 +128,7 @@ try {
             error_response('Invalid email or password.', 401);
         }
 
-        $stmt = $pdo->prepare('SELECT id, email, full_name, status, password_hash FROM users WHERE email = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, email, full_name, password_hash FROM users WHERE email = ? LIMIT 1');
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
@@ -145,7 +143,7 @@ try {
                 'id' => (int) $user['id'],
                 'email' => (string) $user['email'],
                 'fullName' => (string) $user['full_name'],
-                'status' => (string) $user['status'],
+                'status' => 'active',
             ],
         ]);
     }
