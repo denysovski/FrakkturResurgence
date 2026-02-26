@@ -2507,7 +2507,7 @@ FROM (
   ) s
   WHERE p.has_sizes = 1
     AND p.is_active = 1
-    AND c.slug <> 'caps'
+    AND c.slug NOT IN ('caps','belts')
 ) q
 WHERE q.stock > 0;
 
@@ -2516,7 +2516,8 @@ SELECT p.id, 'M', FLOOR(8 + RAND() * 25)
 FROM products p
 INNER JOIN categories c ON c.id = p.category_id
 WHERE p.is_active = 1
-  AND c.slug = 'tshirts'
+  AND p.has_sizes = 1
+  AND c.slug NOT IN ('caps','belts')
   AND NOT EXISTS (
     SELECT 1
     FROM product_sizes ps
@@ -2528,7 +2529,7 @@ SELECT p.id, 'UNI', FLOOR(1 + RAND() * 60)
 FROM products p
 INNER JOIN categories c ON c.id = p.category_id
 WHERE p.is_active = 1
-  AND (p.has_sizes = 0 OR c.slug = 'caps');
+  AND (p.has_sizes = 0 OR c.slug IN ('caps','belts'));
 
 UPDATE products p
 LEFT JOIN (

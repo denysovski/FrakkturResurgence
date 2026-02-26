@@ -16,12 +16,14 @@ import { getStoredUser, type AuthUser } from "@/lib/auth";
 const CATEGORY_SIZE_OPTIONS: Record<string, string[]> = {
   tshirts: ["XS", "S", "M", "L", "XL", "XXL"],
   hoodies: ["XS", "S", "M", "L", "XL", "XXL"],
-  belts: ["S", "M", "L", "XL"],
+  belts: ["UNI"],
   pants: ["XS", "S", "M", "L", "XL", "XXL"],
   knitwear: ["XS", "S", "M", "L", "XL", "XXL"],
   "leather-jackets": ["XS", "S", "M", "L", "XL", "XXL"],
   caps: ["UNI"],
 };
+
+const UNIVERSAL_SIZE_CATEGORIES = new Set<CategoryKey>(["caps", "belts"]);
 
 const defaultSizeOptionsForCategory = (category: CategoryKey | undefined) => {
   if (!category) {
@@ -61,14 +63,21 @@ const ProductDetailPage = () => {
         const dbProduct = await fetchProductByCategoryAndId(safeCategory, productId);
         const sizes = dbProduct.sizes.filter(Boolean);
         setDbSizes(sizes);
-        if (sizes.length) {
-          setSelectedSize(sizes[0]);
-        } else {
+        if (safeCategory && UNIVERSAL_SIZE_CATEGORIES.has(safeCategory)) {
           setSelectedSize("UNI");
+        } else if (sizes.length) {
+          const firstWearableSize = sizes.find((size) => size !== "UNI") || sizes[0];
+          setSelectedSize(firstWearableSize);
+        } else {
+          setSelectedSize("S");
         }
       } catch {
         setDbSizes([]);
-        setSelectedSize("UNI");
+        if (safeCategory && UNIVERSAL_SIZE_CATEGORIES.has(safeCategory)) {
+          setSelectedSize("UNI");
+        } else {
+          setSelectedSize("S");
+        }
       }
     };
 
@@ -137,8 +146,11 @@ const ProductDetailPage = () => {
 
   const availableSizes = dbSizes;
   const availableSizeSet = new Set(availableSizes);
-  const sizeOptions = [...new Set([...defaultSizeOptionsForCategory(safeCategory), ...availableSizes])];
-  const canAddSelectedSize = availableSizeSet.has(selectedSize);
+  const isUniversalProduct = !!safeCategory && UNIVERSAL_SIZE_CATEGORIES.has(safeCategory);
+  const sizeOptions = isUniversalProduct
+    ? ["UNI"]
+    : [...new Set([...defaultSizeOptionsForCategory(safeCategory), ...availableSizes.filter((size) => size !== "UNI")])];
+  const canAddSelectedSize = isUniversalProduct ? true : availableSizeSet.has(selectedSize);
 
   const handleAddToCart = async () => {
     if (!canAddSelectedSize) {
@@ -156,13 +168,15 @@ const ProductDetailPage = () => {
         name: product.name,
         price: product.price,
         image: product.image,
-        size: selectedSize,
+        size: isUniversalProduct ? "UNI" : selectedSize,
         quantity,
       });
 
       toast({
         title: "Added to cart",
-        description: `${product.name} (${selectedSize}) × ${quantity} added to your cart.`,
+        description: isUniversalProduct
+          ? `${product.name} × ${quantity} added to your cart.`
+          : `${product.name} (${selectedSize}) × ${quantity} added to your cart.`,
       });
     } catch (error) {
       toast({
@@ -210,6 +224,7 @@ const ProductDetailPage = () => {
             <h1 className="text-4xl font-light tracking-tight mb-2 animate-fade-in-up">{product.name}</h1>
             <p className="text-xl text-muted-foreground mb-8 animate-fade-in-up-1">{product.price}</p>
 
+            {!isUniversalProduct && (
             <div className="mb-8 animate-fade-in-up-2">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Available sizes</p>
               <div className="flex flex-wrap gap-2">
@@ -235,6 +250,7 @@ const ProductDetailPage = () => {
                 })}
               </div>
             </div>
+            )}
 
             <button
               type="button"
@@ -335,6 +351,7 @@ const ProductDetailPage = () => {
             <h1 className="text-3xl font-light tracking-tight mb-2 animate-fade-in-up">{product.name}</h1>
             <p className="text-lg text-muted-foreground mb-6 animate-fade-in-up-1">{product.price}</p>
 
+            {!isUniversalProduct && (
             <div className="mb-6 animate-fade-in-up-2">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Available sizes</p>
               <div className="flex flex-wrap gap-2">
@@ -360,6 +377,7 @@ const ProductDetailPage = () => {
                 })}
               </div>
             </div>
+            )}
 
             <button
               type="button"
@@ -454,6 +472,7 @@ const ProductDetailPage = () => {
           <h1 className="text-2xl font-light tracking-tight mb-2 animate-fade-in-up">{product.name}</h1>
           <p className="text-lg text-muted-foreground mb-6 animate-fade-in-up-1">{product.price}</p>
 
+          {!isUniversalProduct && (
           <div className="mb-6 animate-fade-in-up-2">
             <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Available sizes</p>
             <div className="flex flex-wrap gap-2">
@@ -479,6 +498,7 @@ const ProductDetailPage = () => {
               })}
             </div>
           </div>
+          )}
 
           <button
             type="button"
