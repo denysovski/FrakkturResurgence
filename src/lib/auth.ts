@@ -11,6 +11,12 @@ type AuthApiResponse = {
   user: AuthUser;
   error?: string;
 };
+
+const getAuthEndpoint = (action: "register" | "login" | "logout" | "me") => {
+  const base = import.meta.env.BASE_URL || "/";
+  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+  return `${normalizedBase}auth.php?action=${action}`;
+};
 const commitSession = (user: AuthUser) => {
   setStoredUser(user);
   window.dispatchEvent(new CustomEvent("frakktur:auth-updated", { detail: user }));
@@ -18,7 +24,7 @@ const commitSession = (user: AuthUser) => {
 
 const authRequest = async (action: "register" | "login" | "logout" | "me", body?: unknown) => {
   const method = action === "me" ? "GET" : "POST";
-  const response = await fetch(`/auth.php?action=${action}`, {
+  const response = await fetch(getAuthEndpoint(action), {
     method,
     credentials: "include",
     headers: body ? { "Content-Type": "application/json" } : undefined,
