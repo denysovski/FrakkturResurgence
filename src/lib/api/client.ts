@@ -9,7 +9,7 @@ const getCandidateApiBases = () => {
   }
 
   if (import.meta.env.DEV) {
-    return ["http://localhost:4000"];
+    return [""];
   }
 
   if (typeof window === "undefined") {

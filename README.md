@@ -62,7 +62,7 @@ Upload the **contents** of `dist/` to your hosting web root (`public_html` or `w
 - `dist/robots.txt`
 - `dist/placeholder.svg`
 
-Do **not** upload source/dev files like `src/`, `server/`, `node_modules/`, `.env*`, `package.json`.
+Do **not** upload source/dev files like `src/`, `node_modules/`, `.env*`, `package.json`.
 
 ### Blank page quick fix checklist
 
@@ -71,9 +71,9 @@ Do **not** upload source/dev files like `src/`, `server/`, `node_modules/`, `.en
 3. Ensure `index.html` is in web root, not inside an extra nested `dist` folder.
 4. Keep `.htaccess` present in web root for SPA routing.
 
-### 4) Backend requirement
+### 4) Database setup
 
-This app uses API endpoints (`/api/...`) for auth, products, cart, and wishlist. The Node server must be hosted separately (or reverse-proxied) and CORS/origin must be configured.
+Import `sql/FULL_IMPORT_ENDORA_SHARED.sql` in phpMyAdmin before first launch.
 
 ## GitHub Pages deployment
 
