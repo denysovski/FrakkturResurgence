@@ -6,7 +6,7 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
   throw new Error("JWT_SECRET must be set and at least 32 characters long.");
 }
 
-export const signAuthToken = (payload) => jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+export const signAuthToken = (payload) => jwt.sign(payload, JWT_SECRET, { expiresIn: "12h" });
 
 export const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization || "";

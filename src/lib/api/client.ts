@@ -72,8 +72,13 @@ export const apiFetch = async (path: string, options: RequestInit = {}) => {
         headers,
       });
 
+      const contentType = response.headers.get("content-type") || "";
+      const isJsonResponse = contentType.toLowerCase().includes("application/json");
       const data = await response.json().catch(() => ({}));
       if (response.ok) {
+        if (!isJsonResponse) {
+          throw new Error("API returned non-JSON response. Check backend URL/proxy configuration.");
+        }
         return data;
       }
 

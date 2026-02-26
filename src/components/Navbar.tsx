@@ -21,7 +21,7 @@ const primaryMenuLinks = [
 ];
 
 const secondaryMenuLinks = [
-  { label: "Login / Register", href: "/auth/login?mode=signup" },
+  { label: "Login / Register", href: "/auth/login" },
   { label: "Frakktur Club", href: "/club" },
   { label: "About Us", href: "/about" },
   { label: "Sustainability program", href: "/sustainability" },
@@ -316,7 +316,7 @@ export default function Navbar({
                   )}
                 </>
               ) : (
-                <Link to="/auth/login?mode=signup" className="block p-1 transition-transform duration-200 hover:scale-110" aria-label="Login">
+                <Link to="/auth/login" className="block p-1 transition-transform duration-200 hover:scale-110" aria-label="Login">
                   <User className="w-5 h-5" />
                 </Link>
               )}
