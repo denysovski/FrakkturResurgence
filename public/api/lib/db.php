@@ -43,19 +43,3 @@ function get_pdo(): PDO
 
     return $pdo;
 }
-
-function ensure_sessions_table(PDO $pdo): void
-{
-    $pdo->exec(
-        "CREATE TABLE IF NOT EXISTS auth_sessions (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            user_id BIGINT UNSIGNED NOT NULL,
-            token_hash CHAR(64) NOT NULL UNIQUE,
-            expires_at DATETIME NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_auth_sessions_user (user_id),
-            INDEX idx_auth_sessions_expires (expires_at),
-            CONSTRAINT fk_auth_sessions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB"
-    );
-}
