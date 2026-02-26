@@ -18,9 +18,10 @@ SET NAMES utf8mb4;
 -- -------------------------------------------------------------
 DROP TRIGGER IF EXISTS trg_wishlist_limit_before_insert;
 DROP PROCEDURE IF EXISTS sp_randomize_product_sizes;
+DROP TABLE IF EXISTS user_verification_codes;
 
 -- -------------------------------------------------------------
--- 1) USERS + AUTH/VERIFICATION
+-- 1) USERS + AUTH
 -- -------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -32,21 +33,6 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_email (email)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS user_verification_codes (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id BIGINT UNSIGNED NOT NULL,
-  code_hash VARCHAR(255) NOT NULL,
-  expires_at DATETIME NOT NULL,
-  consumed_at DATETIME NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_verification_user (user_id),
-  KEY idx_verification_expires (expires_at),
-  CONSTRAINT fk_verification_user
-    FOREIGN KEY (user_id) REFERENCES users(id)
-    ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -------------------------------------------------------------
@@ -320,6 +306,19 @@ BEGIN
   ) q
   WHERE q.stock > 0;
 
+  -- Guarantee every active t-shirt has at least one available size in DB
+  INSERT INTO product_sizes (product_id, size_code, stock)
+  SELECT p.id, 'M', FLOOR(8 + RAND() * 25)
+  FROM products p
+  INNER JOIN categories c ON c.id = p.category_id
+  WHERE p.is_active = 1
+    AND c.slug = 'tshirts'
+    AND NOT EXISTS (
+      SELECT 1
+      FROM product_sizes ps
+      WHERE ps.product_id = p.id AND ps.stock > 0
+    );
+
   -- Caps / no-size products: store as UNI (if available)
   INSERT INTO product_sizes (product_id, size_code, stock)
   SELECT p.id, 'UNI', FLOOR(1 + RAND() * 60)
@@ -360,5 +359,5 @@ GROUP BY p.id, p.product_code, c.slug;
 -- 1) Insert all your real products into `products` + category tables
 -- 2) Then run: CALL sp_randomize_product_sizes();
 -- 3) Frontend must query only sizes where stock > 0 from `product_sizes`
--- 4) Users remain inactive until OTP verification is completed
+-- 4) Any legacy verification-code table can be removed safely
 -- =============================================================

@@ -8,18 +8,6 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS user_verification_codes (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  user_id BIGINT UNSIGNED NOT NULL,
-  code_hash VARCHAR(255) NOT NULL,
-  expires_at DATETIME NOT NULL,
-  consumed_at DATETIME NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_verification_user (user_id),
-  INDEX idx_verification_expires (expires_at),
-  CONSTRAINT fk_verification_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
 CREATE TABLE IF NOT EXISTS categories (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   slug VARCHAR(64) NOT NULL UNIQUE,
@@ -121,4 +109,36 @@ CREATE TABLE IF NOT EXISTS cart_items (
   INDEX idx_cart_user (user_id),
   CONSTRAINT fk_cart_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_cart_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS orders (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  order_code VARCHAR(64) NOT NULL UNIQUE,
+  user_id BIGINT UNSIGNED NOT NULL,
+  status ENUM('processing','shipped','delivered') NOT NULL DEFAULT 'processing',
+  tracking_code VARCHAR(64) NOT NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'EUR',
+  total_cents INT UNSIGNED NOT NULL,
+  shipping_full_name VARCHAR(120) NOT NULL,
+  shipping_line1 VARCHAR(255) NOT NULL,
+  shipping_city VARCHAR(120) NOT NULL,
+  shipping_postal_code VARCHAR(32) NOT NULL,
+  shipping_country VARCHAR(120) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_orders_user (user_id),
+  CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS order_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  order_id BIGINT UNSIGNED NOT NULL,
+  product_id BIGINT UNSIGNED NOT NULL,
+  size_code VARCHAR(16) NULL,
+  quantity INT UNSIGNED NOT NULL DEFAULT 1,
+  unit_price_cents INT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_order_items_order (order_id),
+  CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+  CONSTRAINT fk_order_items_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;

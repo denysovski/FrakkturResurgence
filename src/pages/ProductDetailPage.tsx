@@ -13,6 +13,24 @@ import { fetchProductByCategoryAndId } from "@/lib/productsApi";
 import { addToWishlist } from "@/lib/wishlist";
 import { getStoredUser, type AuthUser } from "@/lib/auth";
 
+const CATEGORY_SIZE_OPTIONS: Record<string, string[]> = {
+  tshirts: ["XS", "S", "M", "L", "XL", "XXL"],
+  hoodies: ["XS", "S", "M", "L", "XL", "XXL"],
+  belts: ["S", "M", "L", "XL"],
+  pants: ["XS", "S", "M", "L", "XL", "XXL"],
+  knitwear: ["XS", "S", "M", "L", "XL", "XXL"],
+  "leather-jackets": ["XS", "S", "M", "L", "XL", "XXL"],
+  caps: ["UNI"],
+};
+
+const defaultSizeOptionsForCategory = (category: CategoryKey | undefined) => {
+  if (!category) {
+    return ["S", "M", "L", "XL"];
+  }
+
+  return CATEGORY_SIZE_OPTIONS[category] || ["S", "M", "L", "XL"];
+};
+
 const ProductDetailPage = () => {
   const { categoryKey, productId } = useParams();
   const navigate = useNavigate();
@@ -42,10 +60,9 @@ const ProductDetailPage = () => {
       try {
         const dbProduct = await fetchProductByCategoryAndId(safeCategory, productId);
         const sizes = dbProduct.sizes.filter(Boolean);
-        const selectableSizes = sizes.filter((size) => size !== "UNI");
-        setDbSizes(selectableSizes);
-        if (selectableSizes.length) {
-          setSelectedSize(selectableSizes[0]);
+        setDbSizes(sizes);
+        if (sizes.length) {
+          setSelectedSize(sizes[0]);
         } else {
           setSelectedSize("UNI");
         }
@@ -119,8 +136,19 @@ const ProductDetailPage = () => {
   }
 
   const availableSizes = dbSizes;
+  const availableSizeSet = new Set(availableSizes);
+  const sizeOptions = [...new Set([...defaultSizeOptionsForCategory(safeCategory), ...availableSizes])];
+  const canAddSelectedSize = availableSizeSet.has(selectedSize);
 
   const handleAddToCart = async () => {
+    if (!canAddSelectedSize) {
+      toast({
+        title: "Size unavailable",
+        description: "This size is currently unavailable.",
+      });
+      return;
+    }
+
     try {
       await addToCart({
         id: product.id,
@@ -185,20 +213,26 @@ const ProductDetailPage = () => {
             <div className="mb-8 animate-fade-in-up-2">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Available sizes</p>
               <div className="flex flex-wrap gap-2">
-                {availableSizes.map((size) => (
+                {sizeOptions.map((size) => {
+                  const isAvailable = availableSizeSet.has(size);
+                  return (
                   <button
                     key={size}
                     type="button"
                     onClick={() => setSelectedSize(size)}
+                    disabled={!isAvailable}
                     className={`px-4 py-2 text-sm border transition-colors ${
-                      selectedSize === size
+                      !isAvailable
+                        ? "border-border/70 text-muted-foreground/60 bg-muted/20 cursor-not-allowed"
+                        : selectedSize === size
                         ? "bg-foreground text-background border-foreground"
                         : "border-border hover:bg-secondary"
                     }`}
                   >
                     {size}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -249,7 +283,8 @@ const ProductDetailPage = () => {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                className="inline-flex items-center justify-center gap-2 bg-foreground text-background px-5 py-3 text-sm hover:opacity-90 transition-opacity"
+                disabled={!canAddSelectedSize}
+                className="inline-flex items-center justify-center gap-2 bg-foreground text-background px-5 py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingBag className="w-4 h-4" />
                 Add to cart
@@ -303,20 +338,26 @@ const ProductDetailPage = () => {
             <div className="mb-6 animate-fade-in-up-2">
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Available sizes</p>
               <div className="flex flex-wrap gap-2">
-                {availableSizes.map((size) => (
+                {sizeOptions.map((size) => {
+                  const isAvailable = availableSizeSet.has(size);
+                  return (
                   <button
                     key={size}
                     type="button"
                     onClick={() => setSelectedSize(size)}
+                    disabled={!isAvailable}
                     className={`px-4 py-2 text-sm border transition-colors ${
-                      selectedSize === size
+                      !isAvailable
+                        ? "border-border/70 text-muted-foreground/60 bg-muted/20 cursor-not-allowed"
+                        : selectedSize === size
                         ? "bg-foreground text-background border-foreground"
                         : "border-border hover:bg-secondary"
                     }`}
                   >
                     {size}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -367,7 +408,8 @@ const ProductDetailPage = () => {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                className="inline-flex items-center justify-center gap-2 bg-foreground text-background px-5 py-3 text-sm hover:opacity-90 transition-opacity"
+                disabled={!canAddSelectedSize}
+                className="inline-flex items-center justify-center gap-2 bg-foreground text-background px-5 py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingBag className="w-4 h-4" />
                 Add to cart
@@ -415,20 +457,26 @@ const ProductDetailPage = () => {
           <div className="mb-6 animate-fade-in-up-2">
             <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3">Available sizes</p>
             <div className="flex flex-wrap gap-2">
-              {product.sizes.map((size) => (
+              {sizeOptions.map((size) => {
+                const isAvailable = availableSizeSet.has(size);
+                return (
                 <button
                   key={size}
                   type="button"
                   onClick={() => setSelectedSize(size)}
+                  disabled={!isAvailable}
                   className={`px-4 py-2 text-sm border transition-colors ${
-                    selectedSize === size
+                    !isAvailable
+                      ? "border-border/70 text-muted-foreground/60 bg-muted/20 cursor-not-allowed"
+                      : selectedSize === size
                       ? "bg-foreground text-background border-foreground"
                       : "border-border hover:bg-secondary"
                   }`}
                 >
                   {size}
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -479,7 +527,8 @@ const ProductDetailPage = () => {
             <button
               type="button"
               onClick={handleAddToCart}
-              className="inline-flex items-center justify-center gap-2 bg-foreground text-background px-5 py-3 text-sm hover:opacity-90 transition-opacity"
+              disabled={!canAddSelectedSize}
+              className="inline-flex items-center justify-center gap-2 bg-foreground text-background px-5 py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingBag className="w-4 h-4" />
               Add to cart
