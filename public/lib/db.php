@@ -28,9 +28,14 @@ function normalize_config_value(?string $value): ?string
         return null;
     }
 
+    $startsWithDoubleQuote = strlen($normalized) >= 2 && substr($normalized, 0, 1) === '"';
+    $endsWithDoubleQuote = strlen($normalized) >= 2 && substr($normalized, -1) === '"';
+    $startsWithSingleQuote = strlen($normalized) >= 2 && substr($normalized, 0, 1) === "'";
+    $endsWithSingleQuote = strlen($normalized) >= 2 && substr($normalized, -1) === "'";
+
     if (
-        (str_starts_with($normalized, '"') && str_ends_with($normalized, '"')) ||
-        (str_starts_with($normalized, "'") && str_ends_with($normalized, "'"))
+        ($startsWithDoubleQuote && $endsWithDoubleQuote) ||
+        ($startsWithSingleQuote && $endsWithSingleQuote)
     ) {
         $normalized = substr($normalized, 1, -1);
         $normalized = trim($normalized);

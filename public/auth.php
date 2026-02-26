@@ -5,13 +5,17 @@ declare(strict_types=1);
 require_once __DIR__ . '/lib/db.php';
 
 $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-session_set_cookie_params([
-    'lifetime' => 60 * 60 * 12,
-    'path' => '/',
-    'secure' => $isHttps,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
+if (PHP_VERSION_ID >= 70300) {
+    session_set_cookie_params([
+        'lifetime' => 60 * 60 * 12,
+        'path' => '/',
+        'secure' => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+} else {
+    session_set_cookie_params(60 * 60 * 12, '/; samesite=Lax', '', $isHttps, true);
+}
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
