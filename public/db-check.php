@@ -2,20 +2,32 @@
 
 declare(strict_types=1);
 
+// Load private config directly as an extra safeguard for shared hosting path quirks.
+$configPath = __DIR__ . '/config.php';
+if (file_exists($configPath)) {
+    require_once $configPath;
+}
+
 require_once __DIR__ . '/lib/db.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 
-$expectedKey = defined('FRAKKTUR_DB_CHECK_KEY') ? (string) FRAKKTUR_DB_CHECK_KEY : '';
-$providedKey = (string) ($_GET['key'] ?? '');
+$expectedKey = defined('FRAKKTUR_DB_CHECK_KEY') ? trim((string) FRAKKTUR_DB_CHECK_KEY) : '';
+$providedKey = trim((string) ($_GET['key'] ?? ''));
 
 if ($expectedKey === '' || $providedKey === '' || !hash_equals($expectedKey, $providedKey)) {
     http_response_code(403);
     echo json_encode([
         'ok' => false,
         'error' => 'Forbidden',
-        'hint' => 'Set FRAKKTUR_DB_CHECK_KEY in public/config.php and pass ?key=...'
+        'hint' => 'Set FRAKKTUR_DB_CHECK_KEY in public/config.php and pass ?key=...',
+        'debug' => [
+            'configFound' => file_exists($configPath),
+            'keyDefined' => defined('FRAKKTUR_DB_CHECK_KEY'),
+            'expectedKeyLength' => strlen($expectedKey),
+            'providedKeyLength' => strlen($providedKey),
+        ],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
