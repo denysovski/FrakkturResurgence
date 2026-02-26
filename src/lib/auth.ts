@@ -8,6 +8,25 @@ export type AuthUser = {
 };
 
 const USER_KEY = "frakktur_auth_user";
+const LEGACY_LOCAL_USERS_KEY = "frakktur_local_auth_users";
+
+const isLegacyLocalToken = (token: string | null) => Boolean(token && token.startsWith("local-auth-"));
+
+const purgeLegacyLocalAuth = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const token = getAuthToken();
+  if (isLegacyLocalToken(token)) {
+    setAuthToken(null);
+    localStorage.removeItem(USER_KEY);
+  }
+
+  localStorage.removeItem(LEGACY_LOCAL_USERS_KEY);
+};
+
+purgeLegacyLocalAuth();
 
 const commitSession = (user: AuthUser, token: string) => {
   setAuthToken(token);
@@ -17,6 +36,13 @@ const commitSession = (user: AuthUser, token: string) => {
 
 export const getStoredUser = (): AuthUser | null => {
   if (typeof window === "undefined") {
+    return null;
+  }
+
+  const token = getAuthToken();
+  if (!token || isLegacyLocalToken(token)) {
+    setAuthToken(null);
+    localStorage.removeItem(USER_KEY);
     return null;
   }
 

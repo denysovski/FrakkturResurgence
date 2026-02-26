@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -28,6 +28,7 @@ import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
 import WishlistPage from "./pages/WishlistPage";
 import OrdersPage from "./pages/OrdersPage";
+import { isAuthenticated } from "./lib/auth";
 
 const queryClient = new QueryClient();
 
@@ -56,7 +57,7 @@ const App = () => (
           <Route path="/orders" element={<OrdersPage />} />
           
           {/* Auth */}
-          <Route path="/auth/login" element={<LoginPage />} />
+          <Route path="/auth/login" element={isAuthenticated() ? <Navigate to="/" replace /> : <LoginPage />} />
           
           {/* Info Pages */}
           <Route path="/club" element={<ClubPage />} />
