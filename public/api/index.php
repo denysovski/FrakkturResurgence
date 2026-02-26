@@ -7,9 +7,14 @@ require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/auth.php';
 
 $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+$scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '/api/index.php');
+$apiDirPath = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+$appBasePath = preg_replace('#/api$#', '', $apiDirPath) ?: '';
+$sessionPath = $appBasePath === '' ? '/' : $appBasePath . '/';
+
 session_set_cookie_params([
     'lifetime' => 60 * 60 * 12,
-    'path' => '/frakkturresurgence',
+    'path' => $sessionPath,
     'secure' => $isHttps,
     'httponly' => true,
     'samesite' => 'Lax',
@@ -29,11 +34,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-$path = preg_replace('#^/frakkturresurgence#', '', $path);
-$path = preg_replace('#^/api#', '', $path);
-$path = preg_replace('#^/index\.php#', '', (string) $path);
-$path = '/' . ltrim((string) $path, '/');
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$requestPath = (string) $requestPath;
+
+if ($apiDirPath !== '' && str_starts_with($requestPath, $apiDirPath)) {
+    $requestPath = substr($requestPath, strlen($apiDirPath));
+}
+
+$requestPath = preg_replace('#^/index\.php#', '', (string) $requestPath);
+$path = '/' . ltrim((string) $requestPath, '/');
 
 $emailRe = '/^[^\s@]+@[^\s@]+\.[^\s@]+$/';
 $nameRe = '/^[a-zA-ZÀ-ž\'\- ]{2,120}$/u';

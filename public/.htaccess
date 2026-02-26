@@ -1,9 +1,7 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /frakkturresurgence/
 
-  RewriteCond %{REQUEST_URI} ^/frakkturresurgence/api/ [NC]
-  RewriteRule ^ - [L]
+  RewriteRule ^api/ - [L]
 
   RewriteCond %{REQUEST_URI} \.(js|mjs|css|map|png|jpe?g|gif|webp|svg|ico|txt|woff2?|ttf|eot)$ [NC]
   RewriteRule ^ - [L]

@@ -3,9 +3,30 @@ const configuredApiBase = import.meta.env.VITE_API_URL?.trim();
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 const ensureLeadingSlash = (value: string) => (value.startsWith("/") ? value : `/${value}`);
 
+const normalizeConfiguredBaseCandidates = (value: string) => {
+  const normalized = stripTrailingSlash(value);
+  const withoutApiSuffix = normalized.replace(/\/api(?:\/index\.php)?$/i, "");
+  return [...new Set([normalized, withoutApiSuffix].filter(Boolean))];
+};
+
+const joinBaseAndPath = (base: string, path: string) => {
+  const normalizedBase = stripTrailingSlash(base);
+  const normalizedPath = ensureLeadingSlash(path);
+
+  if (/\/api\/index\.php$/i.test(normalizedBase) && normalizedPath.startsWith("/api/")) {
+    return `${normalizedBase}${normalizedPath.slice(4)}`;
+  }
+
+  if (/\/api$/i.test(normalizedBase) && normalizedPath.startsWith("/api/")) {
+    return `${normalizedBase}${normalizedPath.slice(4)}`;
+  }
+
+  return `${normalizedBase}${normalizedPath}`;
+};
+
 const getCandidateApiBases = () => {
   if (configuredApiBase) {
-    return [stripTrailingSlash(configuredApiBase)];
+    return normalizeConfiguredBaseCandidates(configuredApiBase);
   }
 
   if (import.meta.env.DEV) {
@@ -32,10 +53,10 @@ const API_BASE_CANDIDATES = getCandidateApiBases();
 export const getApiBaseUrl = () => API_BASE_CANDIDATES[0] || "";
 
 const buildRequestUrls = (base: string, path: string) => {
-  const urls = [`${base}${path}`];
+  const urls = [joinBaseAndPath(base, path)];
 
   if (path.startsWith("/api/") && !path.startsWith("/api/index.php/")) {
-    urls.push(`${base}${path.replace("/api/", "/api/index.php/")}`);
+    urls.push(joinBaseAndPath(base, path.replace("/api/", "/api/index.php/")));
   }
 
   return [...new Set(urls)];
