@@ -162,5 +162,6 @@ try {
 
     error_response('Invalid auth action.', 404);
 } catch (Throwable $e) {
-    error_response('Server error: ' . $e->getMessage(), 500);
+    error_log('[frakktur-auth] ' . $e->getMessage());
+    error_response('Server error.', 500);
 }

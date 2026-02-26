@@ -17,6 +17,28 @@ function env_value(string $key, ?string $default = null): ?string
     return (string) $value;
 }
 
+function normalize_config_value(?string $value): ?string
+{
+    if ($value === null) {
+        return null;
+    }
+
+    $normalized = trim($value);
+    if ($normalized === '') {
+        return null;
+    }
+
+    if (
+        (str_starts_with($normalized, '"') && str_ends_with($normalized, '"')) ||
+        (str_starts_with($normalized, "'") && str_ends_with($normalized, "'"))
+    ) {
+        $normalized = substr($normalized, 1, -1);
+        $normalized = trim($normalized);
+    }
+
+    return $normalized === '' ? null : $normalized;
+}
+
 function get_pdo(): PDO
 {
     static $pdo = null;
@@ -24,14 +46,14 @@ function get_pdo(): PDO
         return $pdo;
     }
 
-    $host = env_value('DB_HOST', defined('FRAKKTUR_DB_HOST') ? FRAKKTUR_DB_HOST : 'db.db049.endora.cz');
-    $port = env_value('DB_PORT', defined('FRAKKTUR_DB_PORT') ? FRAKKTUR_DB_PORT : '3306');
-    $dbName = env_value('DB_NAME', defined('FRAKKTUR_DB_NAME') ? FRAKKTUR_DB_NAME : 'ppdatabase');
-    $user = env_value('DB_USER', defined('FRAKKTUR_DB_USER') ? FRAKKTUR_DB_USER : 'testdomainpp');
-    $password = env_value('DB_PASSWORD', defined('FRAKKTUR_DB_PASSWORD') ? FRAKKTUR_DB_PASSWORD : 'Frakktur12354G@');
+    $host = normalize_config_value(env_value('DB_HOST', defined('FRAKKTUR_DB_HOST') ? (string) FRAKKTUR_DB_HOST : null));
+    $port = normalize_config_value(env_value('DB_PORT', defined('FRAKKTUR_DB_PORT') ? (string) FRAKKTUR_DB_PORT : '3306'));
+    $dbName = normalize_config_value(env_value('DB_NAME', defined('FRAKKTUR_DB_NAME') ? (string) FRAKKTUR_DB_NAME : null));
+    $user = normalize_config_value(env_value('DB_USER', defined('FRAKKTUR_DB_USER') ? (string) FRAKKTUR_DB_USER : null));
+    $password = normalize_config_value(env_value('DB_PASSWORD', defined('FRAKKTUR_DB_PASSWORD') ? (string) FRAKKTUR_DB_PASSWORD : null));
 
-    if ($user === '' || $password === '') {
-        throw new RuntimeException('Database credentials are not configured.');
+    if (!$host || !$port || !$dbName || !$user || !$password) {
+        throw new RuntimeException('Database configuration is missing. Set DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD in public/config.php.');
     }
 
     $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $port, $dbName);

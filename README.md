@@ -68,6 +68,20 @@ Do **not** upload source/dev files like `src/`, `node_modules/`, `.env*`, `packa
 
 Import `sql/FULL_IMPORT_ENDORA_SHARED.sql` in phpMyAdmin before first launch.
 
+### 5) Backend auth DB credentials (Endora)
+
+1. Copy `public/config.example.php` to `public/config.php`.
+2. Fill exact Endora DB values for host, port, db name, user, password.
+3. Upload `public/config.php` to hosting.
+
+`public/config.php` is git-ignored and must not be committed.
+
+If you see `SQLSTATE[HY000] [1045] Access denied`:
+- Recheck exact DB host from Endora panel (not always `localhost`).
+- Re-enter DB user/password manually (trim spaces, no extra quotes).
+- Confirm the DB user has privileges on the selected DB.
+- Save, upload, and retry `.../auth.php?action=me`.
+
 ## GitHub Pages deployment
 
 This repository now includes a GitHub Actions workflow at `.github/workflows/deploy.yml`.
