@@ -42,6 +42,11 @@ function read_json_body(): array
     return is_array($decoded) ? $decoded : [];
 }
 
+function is_debug_enabled(): bool
+{
+    return defined('FRAKKTUR_DEBUG') && FRAKKTUR_DEBUG === true;
+}
+
 $emailRe = '/^[^\s@]+@[^\s@]+\.[^\s@]+$/';
 
 $action = strtolower(trim((string) ($_GET['action'] ?? '')));
@@ -161,5 +166,22 @@ try {
     error_response('Invalid auth action.', 404);
 } catch (Throwable $e) {
     error_log('[frakktur-auth] ' . $e->getMessage());
-    error_response('Server error.', 500);
+
+    if (!is_debug_enabled()) {
+        error_response('Server error.', 500);
+    }
+
+    $sqlCode = null;
+    if ($e instanceof PDOException && isset($e->errorInfo[1])) {
+        $sqlCode = (int) $e->errorInfo[1];
+    }
+
+    json_response([
+        'error' => 'Server error.',
+        'debug' => [
+            'exception' => $e::class,
+            'sqlCode' => $sqlCode,
+            'message' => $e->getMessage(),
+        ],
+    ], 500);
 }
