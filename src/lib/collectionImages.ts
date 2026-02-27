@@ -66,3 +66,12 @@ export const withCollectionImages = <T extends ProductLike>(collection: Collecti
     image: images[index % images.length],
   }));
 };
+
+export const getCollectionImageByIndex = (collection: CollectionKey, index: number) => {
+  const images = collectionImages[collection] || [];
+  if (!images.length) {
+    return "";
+  }
+
+  return images[Math.abs(index) % images.length];
+};

@@ -1,11 +1,12 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageLayout from "@/pages/PageLayout";
-import { catalogCategories, getAllProducts } from "@/lib/catalog";
+import { catalogCategories } from "@/lib/catalog";
 import SEO from "@/components/SEO";
 import { addToWishlist } from "@/lib/wishlist";
 import { getStoredUser, type AuthUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { searchProducts, type DbProduct } from "@/lib/productsApi";
 
 const SearchResultsPage = () => {
   const [params] = useSearchParams();
@@ -13,6 +14,7 @@ const SearchResultsPage = () => {
   const initial = params.get("q") || "";
   const [query, setQuery] = useState(initial);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [productResults, setProductResults] = useState<Array<DbProduct & { image: string }>>([]);
   const { toast } = useToast();
 
   const normalized = initial.trim().toLowerCase();
@@ -22,19 +24,31 @@ const SearchResultsPage = () => {
     [normalized],
   );
 
-  const productResults = useMemo(
-    () =>
-      getAllProducts().filter((product) => {
-        const queryWords = normalized.split(/\s+/).filter(Boolean);
-        if (!queryWords.length) {
-          return false;
-        }
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!normalized) {
+        setProductResults([]);
+        return;
+      }
 
-        const haystack = `${product.name} ${product.categoryTitle}`.toLowerCase();
-        return queryWords.every((word) => haystack.includes(word));
-      }),
-    [normalized],
-  );
+      try {
+        const items = await searchProducts(normalized);
+        if (!cancelled) {
+          setProductResults(items);
+        }
+      } catch {
+        if (!cancelled) {
+          setProductResults([]);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [normalized]);
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();

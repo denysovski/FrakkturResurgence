@@ -28,7 +28,13 @@ import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
 import WishlistPage from "./pages/WishlistPage";
 import OrdersPage from "./pages/OrdersPage";
-import { isAuthenticated } from "./lib/auth";
+import { getStoredUser, isAuthenticated } from "./lib/auth";
+import AdminProductsPage from "./pages/AdminProductsPage";
+
+const isAdminAuthenticated = () => {
+  const user = getStoredUser();
+  return Boolean(user && user.isAdmin);
+};
 
 const queryClient = new QueryClient();
 
@@ -55,6 +61,10 @@ const App = () => (
           <Route path="/cart" element={<CartPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route
+            path="/admin/products"
+            element={isAdminAuthenticated() ? <AdminProductsPage /> : <Navigate to="/auth/login" replace />}
+          />
           
           {/* Auth */}
           <Route path="/auth/login" element={isAuthenticated() ? <Navigate to="/" replace /> : <LoginPage />} />

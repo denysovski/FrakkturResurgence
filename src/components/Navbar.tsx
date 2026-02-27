@@ -295,6 +295,18 @@ export default function Navbar({
                       >
                         My orders
                       </button>
+                      {currentUser.isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            navigate("/admin/products");
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                        >
+                          Admin products
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {

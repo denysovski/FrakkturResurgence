@@ -3,6 +3,7 @@ export type AuthUser = {
   email: string;
   fullName: string;
   status: "active" | "inactive";
+  isAdmin: boolean;
 };
 
 const USER_KEY = "frakktur_auth_user";
@@ -50,7 +51,23 @@ export const getStoredUser = (): AuthUser | null => {
   }
 
   try {
-    return JSON.parse(raw) as AuthUser;
+    const parsed = JSON.parse(raw) as Partial<AuthUser>;
+    if (
+      typeof parsed?.id !== "number" ||
+      typeof parsed?.email !== "string" ||
+      typeof parsed?.fullName !== "string" ||
+      (parsed?.status !== "active" && parsed?.status !== "inactive")
+    ) {
+      return null;
+    }
+
+    return {
+      id: parsed.id,
+      email: parsed.email,
+      fullName: parsed.fullName,
+      status: parsed.status,
+      isAdmin: parsed.isAdmin === true,
+    };
   } catch {
     return null;
   }

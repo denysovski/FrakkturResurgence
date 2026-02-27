@@ -6,6 +6,8 @@ import SEO from "@/components/SEO";
 import { addToWishlist } from "@/lib/wishlist";
 import { getStoredUser, type AuthUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { fetchProductsByCategory } from "@/lib/productsApi";
+import { getCollectionImageByIndex } from "@/lib/collectionImages";
 
 interface CollectionProduct {
   id: string;
@@ -18,7 +20,7 @@ interface CollectionPageProps {
   categoryKey: CategoryKey;
   title: string;
   description?: string;
-  products: CollectionProduct[];
+  products?: CollectionProduct[];
   itemsPerPage?: number;
 }
 
@@ -33,7 +35,7 @@ const CollectionPage = ({
   categoryKey,
   title,
   description,
-  products,
+  products = [],
   itemsPerPage = ITEMS_PER_PAGE,
 }: CollectionPageProps) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,6 +43,7 @@ const CollectionPage = ({
   const [gridCols, setGridCols] = useState(4);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [liveProducts, setLiveProducts] = useState<CollectionProduct[]>(products);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -62,15 +65,47 @@ const CollectionPage = ({
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const dbProducts = await fetchProductsByCategory(categoryKey);
+        if (cancelled) {
+          return;
+        }
+
+        setLiveProducts(
+          dbProducts.map((product, index) => ({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.image || getCollectionImageByIndex(categoryKey, index),
+          })),
+        );
+      } catch {
+        if (!cancelled) {
+          setLiveProducts(products);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryKey, products]);
+
   // Sort products based on selected option
-  const sortedProducts = [...products].sort((a, b) => {
+  const sortedProducts = [...liveProducts].sort((a, b) => {
     switch (sortBy) {
       case "alphabetical":
         return a.name.localeCompare(b.name);
       case "popular":
-        return products.indexOf(a) - products.indexOf(b);
+        return liveProducts.indexOf(a) - liveProducts.indexOf(b);
       case "newest":
-        return products.indexOf(b) - products.indexOf(a);
+        return liveProducts.indexOf(b) - liveProducts.indexOf(a);
       case "price-asc":
         return parsePriceValue(a.price) - parsePriceValue(b.price);
       case "price-desc":

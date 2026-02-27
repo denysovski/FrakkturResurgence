@@ -4,7 +4,7 @@ import { Heart, Minus, Plus, ShoppingBag } from "lucide-react";
 import PageLayout from "@/pages/PageLayout";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { getCategoryData, getProductByCategoryAndId, type CategoryKey } from "@/lib/catalog";
+import { getCategoryData, type CategoryKey } from "@/lib/catalog";
 import { pushRecentlyViewed, readRecentlyViewed } from "@/lib/recentlyViewed";
 import { addToCart } from "@/lib/cart";
 import { useToast } from "@/hooks/use-toast";
@@ -39,9 +39,19 @@ const ProductDetailPage = () => {
   const { toast } = useToast();
 
   const safeCategory = categoryKey as CategoryKey | undefined;
-  const product = safeCategory && productId ? getProductByCategoryAndId(safeCategory, productId) : null;
   const category = safeCategory ? getCategoryData(safeCategory) : null;
 
+  const [product, setProduct] = useState<null | {
+    id: string;
+    name: string;
+    price: string;
+    image: string;
+    categoryTitle: string;
+    description: string;
+    material: string;
+    sustainability: string;
+  }>(null);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(true);
   const [selectedSize, setSelectedSize] = useState("UNI");
   const [dbSizes, setDbSizes] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
@@ -56,11 +66,22 @@ const ProductDetailPage = () => {
   useEffect(() => {
     const loadProductFromDb = async () => {
       if (!safeCategory || !productId) {
+        setIsLoadingProduct(false);
         return;
       }
 
       try {
         const dbProduct = await fetchProductByCategoryAndId(safeCategory, productId);
+        setProduct({
+          id: dbProduct.id,
+          name: dbProduct.name,
+          price: dbProduct.price,
+          image: dbProduct.image,
+          categoryTitle: dbProduct.categoryTitle,
+          description: dbProduct.description,
+          material: dbProduct.material,
+          sustainability: dbProduct.sustainability,
+        });
         const sizes = dbProduct.sizes.filter(Boolean);
         setDbSizes(sizes);
         if (safeCategory && UNIVERSAL_SIZE_CATEGORIES.has(safeCategory)) {
@@ -72,12 +93,15 @@ const ProductDetailPage = () => {
           setSelectedSize("S");
         }
       } catch {
+        setProduct(null);
         setDbSizes([]);
         if (safeCategory && UNIVERSAL_SIZE_CATEGORIES.has(safeCategory)) {
           setSelectedSize("UNI");
         } else {
           setSelectedSize("S");
         }
+      } finally {
+        setIsLoadingProduct(false);
       }
     };
 
@@ -130,6 +154,16 @@ const ProductDetailPage = () => {
 
     return recentlyViewed.filter((item) => item.key !== `${safeCategory}:${product.id}`);
   }, [recentlyViewed, product, safeCategory]);
+
+  if (isLoadingProduct) {
+    return (
+      <PageLayout forceBlackNavbar={true}>
+        <div className="pt-32 pb-20 px-6 md:px-10">
+          <h1 className="text-3xl font-light mb-4">Loading product...</h1>
+        </div>
+      </PageLayout>
+    );
+  }
 
   if (!product || !safeCategory) {
     return (
