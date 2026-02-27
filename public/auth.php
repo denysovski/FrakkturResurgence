@@ -49,6 +49,92 @@ function is_debug_enabled()
     return defined('FRAKKTUR_DEBUG') && FRAKKTUR_DEBUG === true;
 }
 
+function require_auth_user_id()
+{
+    $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+    if (!is_numeric($userId)) {
+        error_response('Unauthorized', 401);
+    }
+
+    return (int) $userId;
+}
+
+function ensure_user_item_tables($pdo)
+{
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS cart_items (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id BIGINT UNSIGNED NOT NULL,
+            product_id BIGINT UNSIGNED NOT NULL,
+            size_code VARCHAR(32) NOT NULL,
+            quantity INT NOT NULL DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_cart_user_product_size (user_id, product_id, size_code),
+            KEY idx_cart_user (user_id),
+            CONSTRAINT fk_cart_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_cart_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+    );
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS wishlist_items (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id BIGINT UNSIGNED NOT NULL,
+            product_id BIGINT UNSIGNED NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_wishlist_user_product (user_id, product_id),
+            KEY idx_wishlist_user (user_id),
+            CONSTRAINT fk_wishlist_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_wishlist_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+    );
+}
+
+function find_product_id($pdo, $categoryKey, $productCode)
+{
+    $stmt = $pdo->prepare(
+        'SELECT p.id
+         FROM products p
+         INNER JOIN categories c ON c.id = p.category_id
+         WHERE c.slug = ? AND p.product_code = ?
+         LIMIT 1'
+    );
+    $stmt->execute(array($categoryKey, $productCode));
+    $row = $stmt->fetch();
+
+    return $row ? (int) $row['id'] : null;
+}
+
+function parse_cart_key($key)
+{
+    $parts = explode(':', (string) $key);
+    if (count($parts) !== 3) {
+        return null;
+    }
+
+    return array(
+        'categoryKey' => $parts[0],
+        'productCode' => $parts[1],
+        'sizeCode' => $parts[2],
+    );
+}
+
+function parse_wishlist_key($key)
+{
+    $parts = explode(':', (string) $key);
+    if (count($parts) !== 2) {
+        return null;
+    }
+
+    return array(
+        'categoryKey' => $parts[0],
+        'productCode' => $parts[1],
+    );
+}
+
 $emailRe = '/^[^\s@]+@[^\s@]+\.[^\s@]+$/';
 $action = isset($_GET['action']) ? strtolower(trim((string) $_GET['action'])) : '';
 $method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
@@ -165,6 +251,192 @@ try {
             setcookie(session_name(), '', time() - 42000, $path, $domain, $secure, $httponly);
         }
         session_destroy();
+        json_response(array('ok' => true), 200);
+    }
+
+    if ($action === 'cart_get' && $method === 'GET') {
+        ensure_user_item_tables($pdo);
+        $userId = require_auth_user_id();
+
+        $stmt = $pdo->prepare(
+            'SELECT c.slug AS category_key, p.product_code, ci.size_code, ci.quantity
+             FROM cart_items ci
+             INNER JOIN products p ON p.id = ci.product_id
+             INNER JOIN categories c ON c.id = p.category_id
+             WHERE ci.user_id = ?
+             ORDER BY ci.id DESC'
+        );
+        $stmt->execute(array($userId));
+        $rows = $stmt->fetchAll();
+
+        $items = array();
+        foreach ($rows as $row) {
+            $categoryKey = (string) $row['category_key'];
+            $productCode = (string) $row['product_code'];
+            $sizeCode = (string) $row['size_code'];
+            $items[] = array(
+                'key' => $categoryKey . ':' . $productCode . ':' . $sizeCode,
+                'id' => $productCode,
+                'categoryKey' => $categoryKey,
+                'size' => $sizeCode,
+                'quantity' => (int) $row['quantity'],
+            );
+        }
+
+        json_response(array('items' => $items), 200);
+    }
+
+    if ($action === 'cart_add' && $method === 'POST') {
+        ensure_user_item_tables($pdo);
+        $userId = require_auth_user_id();
+        $body = read_json_body();
+
+        $categoryKey = isset($body['categoryKey']) ? trim((string) $body['categoryKey']) : '';
+        $productCode = isset($body['productCode']) ? trim((string) $body['productCode']) : '';
+        $sizeCode = isset($body['size']) ? trim((string) $body['size']) : '';
+        $quantity = isset($body['quantity']) ? (int) $body['quantity'] : 1;
+
+        if ($categoryKey === '' || $productCode === '' || $sizeCode === '' || $quantity <= 0) {
+            error_response('Invalid cart item payload.', 400);
+        }
+
+        $productId = find_product_id($pdo, $categoryKey, $productCode);
+        if (!$productId) {
+            error_response('Product not found.', 404);
+        }
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO cart_items (user_id, product_id, size_code, quantity)
+               VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity), updated_at = CURRENT_TIMESTAMP'
+        );
+        $stmt->execute(array($userId, $productId, $sizeCode, $quantity));
+
+        json_response(array('ok' => true), 200);
+    }
+
+    if ($action === 'cart_update' && $method === 'POST') {
+        ensure_user_item_tables($pdo);
+        $userId = require_auth_user_id();
+        $body = read_json_body();
+        $key = isset($body['key']) ? trim((string) $body['key']) : '';
+        $quantity = isset($body['quantity']) ? (int) $body['quantity'] : 0;
+
+        $parts = parse_cart_key($key);
+        if (!$parts) {
+            error_response('Invalid cart key.', 400);
+        }
+
+        $productId = find_product_id($pdo, $parts['categoryKey'], $parts['productCode']);
+        if (!$productId) {
+            error_response('Product not found.', 404);
+        }
+
+        if ($quantity <= 0) {
+            $stmt = $pdo->prepare('DELETE FROM cart_items WHERE user_id = ? AND product_id = ? AND size_code = ?');
+            $stmt->execute(array($userId, $productId, $parts['sizeCode']));
+            json_response(array('ok' => true), 200);
+        }
+
+        $stmt = $pdo->prepare('UPDATE cart_items SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ? AND size_code = ?');
+        $stmt->execute(array($quantity, $userId, $productId, $parts['sizeCode']));
+        json_response(array('ok' => true), 200);
+    }
+
+    if ($action === 'cart_remove' && $method === 'POST') {
+        ensure_user_item_tables($pdo);
+        $userId = require_auth_user_id();
+        $body = read_json_body();
+        $key = isset($body['key']) ? trim((string) $body['key']) : '';
+        $parts = parse_cart_key($key);
+        if (!$parts) {
+            error_response('Invalid cart key.', 400);
+        }
+
+        $productId = find_product_id($pdo, $parts['categoryKey'], $parts['productCode']);
+        if (!$productId) {
+            json_response(array('ok' => true), 200);
+        }
+
+        $stmt = $pdo->prepare('DELETE FROM cart_items WHERE user_id = ? AND product_id = ? AND size_code = ?');
+        $stmt->execute(array($userId, $productId, $parts['sizeCode']));
+
+        json_response(array('ok' => true), 200);
+    }
+
+    if ($action === 'wishlist_get' && $method === 'GET') {
+        ensure_user_item_tables($pdo);
+        $userId = require_auth_user_id();
+
+        $stmt = $pdo->prepare(
+            'SELECT c.slug AS category_key, p.product_code
+             FROM wishlist_items wi
+             INNER JOIN products p ON p.id = wi.product_id
+             INNER JOIN categories c ON c.id = p.category_id
+             WHERE wi.user_id = ?
+             ORDER BY wi.id DESC'
+        );
+        $stmt->execute(array($userId));
+        $rows = $stmt->fetchAll();
+
+        $items = array();
+        foreach ($rows as $row) {
+            $categoryKey = (string) $row['category_key'];
+            $productCode = (string) $row['product_code'];
+            $items[] = array(
+                'key' => $categoryKey . ':' . $productCode,
+                'id' => $productCode,
+                'categoryKey' => $categoryKey,
+            );
+        }
+
+        json_response(array('items' => $items), 200);
+    }
+
+    if ($action === 'wishlist_add' && $method === 'POST') {
+        ensure_user_item_tables($pdo);
+        $userId = require_auth_user_id();
+        $body = read_json_body();
+        $categoryKey = isset($body['categoryKey']) ? trim((string) $body['categoryKey']) : '';
+        $productCode = isset($body['productCode']) ? trim((string) $body['productCode']) : '';
+
+        if ($categoryKey === '' || $productCode === '') {
+            error_response('Invalid wishlist payload.', 400);
+        }
+
+        $productId = find_product_id($pdo, $categoryKey, $productCode);
+        if (!$productId) {
+            error_response('Product not found.', 404);
+        }
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO wishlist_items (user_id, product_id)
+               VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE product_id = VALUES(product_id)'
+        );
+        $stmt->execute(array($userId, $productId));
+
+        json_response(array('ok' => true), 200);
+    }
+
+    if ($action === 'wishlist_remove' && $method === 'POST') {
+        ensure_user_item_tables($pdo);
+        $userId = require_auth_user_id();
+        $body = read_json_body();
+        $key = isset($body['key']) ? trim((string) $body['key']) : '';
+        $parts = parse_wishlist_key($key);
+        if (!$parts) {
+            error_response('Invalid wishlist key.', 400);
+        }
+
+        $productId = find_product_id($pdo, $parts['categoryKey'], $parts['productCode']);
+        if (!$productId) {
+            json_response(array('ok' => true), 200);
+        }
+
+        $stmt = $pdo->prepare('DELETE FROM wishlist_items WHERE user_id = ? AND product_id = ?');
+        $stmt->execute(array($userId, $productId));
+
         json_response(array('ok' => true), 200);
     }
 

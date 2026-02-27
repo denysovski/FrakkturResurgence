@@ -82,6 +82,16 @@ If you see `SQLSTATE[HY000] [1045] Access denied`:
 - Confirm the DB user has privileges on the selected DB.
 - Save, upload, and retry `.../auth.php?action=me`.
 
+### 6) Check user cart/wishlist in DB
+
+For logged-in users, items are stored in database tables:
+- `cart_items` (`user_id`, `product_id`, `size_code`, `quantity`)
+- `wishlist_items` (`user_id`, `product_id`)
+
+To inspect one account in phpMyAdmin:
+- Find user id in `users` by email.
+- Filter `cart_items.user_id = <that id>` and `wishlist_items.user_id = <that id>`.
+
 ## GitHub Pages deployment
 
 This repository now includes a GitHub Actions workflow at `.github/workflows/deploy.yml`.

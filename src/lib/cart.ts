@@ -19,6 +19,28 @@ const emitCartUpdated = (items: CartItem[]) => {
   }
 };
 
+const getAuthEndpoint = (action: string) => {
+  const base = import.meta.env.BASE_URL || "/";
+  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+  return `${normalizedBase}auth.php?action=${action}`;
+};
+
+const cartRequest = async (action: string, method: "GET" | "POST", body?: unknown) => {
+  const response = await fetch(getAuthEndpoint(action), {
+    method,
+    credentials: "include",
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(typeof data?.error === "string" ? data.error : `Request failed (${response.status})`);
+  }
+
+  return data;
+};
+
 const getUserStorageKey = () => {
   const user = getStoredUser();
   if (!user) {
@@ -57,25 +79,38 @@ const writeLocalCart = (items: CartItem[]) => {
 };
 
 export const readCart = async (): Promise<CartItem[]> => {
-  const items = readLocalCart();
+  const response = await cartRequest("cart_get", "GET");
+  const rawItems = Array.isArray(response?.items) ? response.items : [];
+
+  const items: CartItem[] = rawItems.map((item: { key: string; id: string; categoryKey: CategoryKey; size: string; quantity: number }) => {
+    const product = getProductByCategoryAndId(item.categoryKey, item.id);
+    return {
+      key: item.key,
+      id: item.id,
+      categoryKey: item.categoryKey,
+      name: product?.name || item.id,
+      price: product?.price || "€0.00",
+      image: product?.image || "",
+      size: item.size,
+      quantity: item.quantity,
+    };
+  });
+
+  writeLocalCart(items);
   emitCartUpdated(items);
   return items;
 };
 
 export const addToCart = async (item: Omit<CartItem, "key">) => {
-  const current = readLocalCart();
-  const key = `${item.categoryKey}:${item.id}:${item.size}`;
-  const existing = current.find((entry) => entry.key === key);
+  getUserStorageKey();
+  await cartRequest("cart_add", "POST", {
+    categoryKey: item.categoryKey,
+    productCode: item.id,
+    size: item.size,
+    quantity: item.quantity,
+  });
 
-  if (existing) {
-    existing.quantity += item.quantity;
-  } else {
-    current.push({ ...item, key });
-  }
-
-  writeLocalCart(current);
-  emitCartUpdated(current);
-  return current;
+  return readCart();
 };
 
 export const updateCartQuantity = async (key: string, quantity: number): Promise<CartItem[]> => {
@@ -83,22 +118,22 @@ export const updateCartQuantity = async (key: string, quantity: number): Promise
     return removeFromCart(key);
   }
 
-  const current = readLocalCart();
-  const next = current.map((item) => (item.key === key ? { ...item, quantity } : item));
-  writeLocalCart(next);
-  emitCartUpdated(next);
-  return next;
+  getUserStorageKey();
+  await cartRequest("cart_update", "POST", { key, quantity });
+  return readCart();
 };
 
 export const removeFromCart = async (key: string): Promise<CartItem[]> => {
-  const current = readLocalCart();
-  const next = current.filter((item) => item.key !== key);
-  writeLocalCart(next);
-  emitCartUpdated(next);
-  return next;
+  getUserStorageKey();
+  await cartRequest("cart_remove", "POST", { key });
+  return readCart();
 };
 
 export const clearCart = async (): Promise<CartItem[]> => {
+  const current = await readCart();
+  for (const item of current) {
+    await cartRequest("cart_remove", "POST", { key: item.key });
+  }
   writeLocalCart([]);
   emitCartUpdated([]);
   return [];
