@@ -1,99 +1,10 @@
 # FrakkturResurgence
+School showcase project focused on full-stack web development, combining frontend design with backend functionality. The goal was to build a functional e-commerce template from scratch, covering the complete workflow from UI/UX to deployment.
 
-React + Tailwind CSS ecommerce project.
+The frontend is built with React, TypeScript, Vite, and Tailwind CSS, with emphasis on clean component structure, responsive layout, and reusable styling. The application includes core e-commerce features such as product listing, user authentication (login/register), cart and wishlist handling, and basic account state management.
 
-## Repository
+On the backend side, the project uses a MySQL database to persist users, products, carts, wishlists, and orders. Authentication and data handling are connected to the frontend via a simple PHP-based API layer. Database management and inspection are done through phpMyAdmin, and the project is deployed on Endora shared hosting, using WebFTP for production uploads.
 
-https://github.com/denysovski/FrakkturResurgence
+Overall, FrakkturResurgence demonstrates practical skills in frontend development, backend integration, database design, and real-world deployment on shared hosting—mirroring how small to mid-scale web projects are often built and maintained outside of purely local or cloud-native environments.
 
-## Tech stack
-
-- React
-- TypeScript
-- Tailwind CSS
-- Vite
-
-## Local development
-
-```sh
-npm install
-npm run dev
-```
-
-## Production build
-
-```sh
-npm run build
-```
-
-## Deploy to shared hosting (WebFTP)
-
-### 1) Configure frontend base path (before build)
-
-Create `.env.production` in the project root:
-
-```dotenv
-VITE_PUBLIC_BASE=/
-```
-
-Use `VITE_PUBLIC_BASE=/` when app is in domain root. If app is inside a subfolder, set it to that folder with leading/trailing slash (example: `VITE_PUBLIC_BASE=/shop/`).
-
-### 2) Build
-
-```sh
-npm run build
-```
-
-### 3) Upload via WebFTP
-
-Upload the **contents** of `dist/` to your hosting web root (`public_html` or `www`):
-
-- `dist/index.html`
-- `dist/assets/`
-- `dist/.htaccess`
-- `dist/favicon.ico`
-- `dist/robots.txt`
-- `dist/placeholder.svg`
-
-Do **not** upload source/dev files like `src/`, `node_modules/`, `.env*`, `package.json`.
-
-### Blank page quick fix checklist
-
-1. Open browser DevTools → Network and reload. If `assets/index-*.js` is 404, base path is wrong.
-2. Set correct `VITE_PUBLIC_BASE` in `.env.production`, rebuild, and re-upload full `dist/` contents.
-3. Ensure `index.html` is in web root, not inside an extra nested `dist` folder.
-4. Keep `.htaccess` present in web root for SPA routing.
-
-### 4) Database setup
-
-Import `sql/FULL_IMPORT_ENDORA_SHARED.sql` in phpMyAdmin before first launch.
-
-### 5) Backend auth DB credentials (Endora)
-
-1. Create `public/config.php`.
-2. Fill exact Endora DB values for host, port, db name, user, password.
-3. Upload `public/config.php` to hosting.
-
-`public/config.php` is git-ignored and must not be committed.
-
-If you see `SQLSTATE[HY000] [1045] Access denied`:
-- Recheck exact DB host from Endora panel (not always `localhost`).
-- Re-enter DB user/password manually (trim spaces, no extra quotes).
-- Confirm the DB user has privileges on the selected DB.
-- Save, upload, and retry `.../auth.php?action=me`.
-
-### 6) Check user cart/wishlist in DB
-
-For logged-in users, items are stored in database tables:
-- `cart_items` (`user_id`, `product_id`, `size_code`, `quantity`)
-- `wishlist_items` (`user_id`, `product_id`)
-
-To inspect one account in phpMyAdmin:
-- Find user id in `users` by email.
-- Filter `cart_items.user_id = <that id>` and `wishlist_items.user_id = <that id>`.
-
-## GitHub Pages deployment
-
-This repository now includes a GitHub Actions workflow at `.github/workflows/deploy.yml`.
-
-After enabling GitHub Pages in repository settings (Build and deployment source: **GitHub Actions**), every push to `main` deploys the latest build automatically.
+<img alt="screencapture-testdomain-pp-mzf-cz-frakkturresurgence-2026-02-28-18_30_32" src="https://github.com/user-attachments/assets/5d06c68a-8ecc-4d37-89cc-57a4955eb232" />
