@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { X } from "lucide-react";
 import PageLayout from "@/pages/PageLayout";
@@ -39,15 +39,15 @@ const AdminAssetsPage = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const refresh = async (category: "all" | CategoryKey) => {
+  const refresh = useCallback(async (category: "all" | CategoryKey) => {
     const response = await fetchAdminAssets(category);
     setItems(response.items);
-  };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
-    const load = async () => {
+    const ensureAdmin = async () => {
       try {
         const user = await fetchCurrentUser();
         if (!user.isAdmin) {
@@ -55,7 +55,6 @@ const AdminAssetsPage = () => {
           return;
         }
 
-        await refresh(selectedCategory);
         if (!cancelled) {
           setIsLoading(false);
         }
@@ -66,11 +65,33 @@ const AdminAssetsPage = () => {
       }
     };
 
-    void load();
+    void ensureAdmin();
     return () => {
       cancelled = true;
     };
-  }, [navigate, selectedCategory]);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    let cancelled = false;
+    const loadItems = async () => {
+      try {
+        await refresh(selectedCategory);
+      } catch {
+        if (!cancelled) {
+          toast({ title: "Load failed", description: "Could not load assets." });
+        }
+      }
+    };
+
+    void loadItems();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoading, selectedCategory, refresh, toast]);
 
   const onUpload = async () => {
     if (!selectedFile) {
@@ -221,7 +242,7 @@ const AdminAssetsPage = () => {
                     className="w-full text-left"
                   >
                     <div className="aspect-square bg-secondary overflow-hidden">
-                      <img src={imageUrl} alt={item.fileName} className="w-full h-full object-cover" />
+                      <img src={imageUrl} alt={item.fileName} loading="lazy" className="w-full h-full object-cover" />
                     </div>
                     <div className="p-2 pr-9">
                       <p className="text-[11px] text-muted-foreground truncate">{item.category}</p>

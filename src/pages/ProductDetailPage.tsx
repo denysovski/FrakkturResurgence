@@ -74,8 +74,10 @@ const ProductDetailPage = () => {
       }
 
       try {
-        const dbProduct = await fetchProductByCategoryAndId(safeCategory, productId);
-        const sameCategory = await fetchProductsByCategory(safeCategory);
+        const [dbProduct, sameCategory] = await Promise.all([
+          fetchProductByCategoryAndId(safeCategory, productId),
+          fetchProductsByCategory(safeCategory),
+        ]);
         setImageError(false);
         setProduct({
           id: dbProduct.id,

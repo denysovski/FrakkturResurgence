@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SEO from "@/components/SEO";
-import { fetchCurrentUser, isAuthenticated, loginUser, registerUser } from "@/lib/auth";
+import { isAuthenticated, loginUser, registerUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,23 +32,7 @@ const LoginPage = () => {
       return;
     }
 
-    let cancelled = false;
-
-    const redirectIfSessionIsValid = async () => {
-      try {
-        await fetchCurrentUser();
-        if (!cancelled) {
-          navigate("/", { replace: true });
-        }
-      } catch {
-      }
-    };
-
-    void redirectIfSessionIsValid();
-
-    return () => {
-      cancelled = true;
-    };
+    navigate("/", { replace: true });
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {

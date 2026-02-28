@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Filter, Sparkles, TrendingUp, Star, DollarSign, ChevronDown, Grid2x2, Grid3x3, Type } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { CategoryKey } from "@/lib/catalog";
@@ -106,22 +106,28 @@ const CollectionPage = ({
   }, [categoryKey]);
 
   // Sort products based on selected option
-  const sortedProducts = [...liveProducts].sort((a, b) => {
-    switch (sortBy) {
-      case "alphabetical":
-        return a.name.localeCompare(b.name);
-      case "popular":
-        return liveProducts.indexOf(a) - liveProducts.indexOf(b);
-      case "newest":
-        return liveProducts.indexOf(b) - liveProducts.indexOf(a);
-      case "price-asc":
-        return parsePriceValue(a.price) - parsePriceValue(b.price);
-      case "price-desc":
-        return parsePriceValue(b.price) - parsePriceValue(a.price);
-      default:
-        return 0;
-    }
-  });
+  const sortedProducts = useMemo(() => {
+    const withIndex = liveProducts.map((product, index) => ({ product, index }));
+
+    withIndex.sort((a, b) => {
+      switch (sortBy) {
+        case "alphabetical":
+          return a.product.name.localeCompare(b.product.name);
+        case "popular":
+          return a.index - b.index;
+        case "newest":
+          return b.index - a.index;
+        case "price-asc":
+          return parsePriceValue(a.product.price) - parsePriceValue(b.product.price);
+        case "price-desc":
+          return parsePriceValue(b.product.price) - parsePriceValue(a.product.price);
+        default:
+          return 0;
+      }
+    });
+
+    return withIndex.map((item) => item.product);
+  }, [liveProducts, sortBy]);
 
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -283,6 +289,7 @@ const CollectionPage = ({
                 <img
                   src={product.image}
                   alt={`${product.name} - ${title.toLowerCase()} for sale at Frakktur luxury streetwear`}
+                  loading="lazy"
                   onError={(event) => {
                     const fallback = getCollectionImageByIndex(categoryKey, startIndex + idx);
                     if (!fallback || event.currentTarget.src === fallback) {

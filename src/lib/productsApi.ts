@@ -48,6 +48,10 @@ const CATEGORY_PREFIX_TO_KEY: Record<string, CategoryKey> = {
   j: "leather-jackets",
 };
 
+const GET_CACHE_TTL_MS = 30_000;
+const responseCache = new Map<string, { expiresAt: number; data: unknown }>();
+const inFlightRequests = new Map<string, Promise<unknown>>();
+
 const getEndpoint = (action: string) => {
   const base = import.meta.env.BASE_URL || "/";
   const normalizedBase = base.endsWith("/") ? base : `${base}/`;
@@ -123,16 +127,51 @@ export const resolveImageUrl = (imageKey: string | undefined, categoryKey: Categ
 };
 
 const request = async <T>(action: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(getEndpoint(action), {
-    credentials: "include",
-    ...init,
-  });
+  const method = (init?.method || "GET").toUpperCase();
+  const cacheKey = `${method}:${action}`;
 
-  const data = (await response.json().catch(() => ({}))) as T & { error?: string };
-  if (!response.ok) {
-    throw new Error(typeof data.error === "string" ? data.error : `Request failed (${response.status})`);
+  if (method === "GET") {
+    const cached = responseCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data as T;
+    }
+
+    const inFlight = inFlightRequests.get(cacheKey);
+    if (inFlight) {
+      return (await inFlight) as T;
+    }
   }
-  return data;
+
+  const task = (async () => {
+    const response = await fetch(getEndpoint(action), {
+      credentials: "include",
+      ...init,
+    });
+
+    const data = (await response.json().catch(() => ({}))) as T & { error?: string };
+    if (!response.ok) {
+      throw new Error(typeof data.error === "string" ? data.error : `Request failed (${response.status})`);
+    }
+
+    if (method === "GET") {
+      responseCache.set(cacheKey, { expiresAt: Date.now() + GET_CACHE_TTL_MS, data });
+    } else {
+      responseCache.clear();
+    }
+
+    return data;
+  })();
+
+  if (method === "GET") {
+    inFlightRequests.set(cacheKey, task as Promise<unknown>);
+    try {
+      return await task;
+    } finally {
+      inFlightRequests.delete(cacheKey);
+    }
+  }
+
+  return task;
 };
 
 const mapDbProduct = (product: DbProduct) => ({

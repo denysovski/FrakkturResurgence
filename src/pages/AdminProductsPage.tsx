@@ -137,12 +137,12 @@ const AdminProductsPage = () => {
     [products, selectedCategoryFilter],
   );
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     const [productsResponse, optionsResponse] = await Promise.all([fetchAdminProducts(), fetchAdminOptions()]);
     setProducts(productsResponse.products);
     setDescriptionOptions(optionsResponse.descriptions);
     setSustainabilityOptions(optionsResponse.sustainability);
-  };
+  }, []);
 
   const fillFromProduct = useCallback((product: AdminProduct) => {
     setForm({
@@ -192,7 +192,7 @@ const AdminProductsPage = () => {
         description: error instanceof Error ? error.message : "Please try again.",
       });
     }
-  }, [form.id, toast]);
+  }, [form.id, refresh, toast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -221,7 +221,7 @@ const AdminProductsPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, refresh]);
 
   const openImageSelector = useCallback(() => {
     const base = import.meta.env.BASE_URL || "/";
@@ -289,27 +289,7 @@ const AdminProductsPage = () => {
     } finally {
       setIsSaving(false);
     }
-  }, [form, sizeKeys, toast]);
-
-  const onDeleteDuplicate = async (id: string) => {
-    if (!window.confirm(`Delete product ${id}?`)) {
-      return;
-    }
-
-    try {
-      await deleteAdminProduct(id);
-      await refresh();
-      if (form.id === id) {
-        setForm(emptyForm());
-      }
-      toast({ title: "Deleted", description: `${id} was removed.` });
-    } catch (error) {
-      toast({
-        title: "Delete failed",
-        description: error instanceof Error ? error.message : "Please try again.",
-      });
-    }
-  };
+  }, [form, sizeKeys, toast, refresh]);
 
   if (isLoading) {
     return (

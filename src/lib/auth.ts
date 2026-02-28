@@ -7,6 +7,10 @@ export type AuthUser = {
 };
 
 const USER_KEY = "frakktur_auth_user";
+const ME_CACHE_TTL_MS = 15_000;
+
+let meCache: { user: AuthUser; expiresAt: number } | null = null;
+let meInFlight: Promise<AuthUser> | null = null;
 
 type AuthApiResponse = {
   user: AuthUser;
@@ -20,6 +24,7 @@ const getAuthEndpoint = (action: "register" | "login" | "logout" | "me") => {
 };
 const commitSession = (user: AuthUser) => {
   setStoredUser(user);
+  meCache = { user, expiresAt: Date.now() + ME_CACHE_TTL_MS };
   window.dispatchEvent(new CustomEvent("frakktur:auth-updated", { detail: user }));
 };
 
@@ -113,19 +118,39 @@ export const loginUser = async (input: { email: string; password: string }) => {
 export const logoutUser = () => {
   void authRequest("logout").catch(() => undefined);
   setStoredUser(null);
+  meCache = null;
+  meInFlight = null;
   window.dispatchEvent(new CustomEvent("frakktur:auth-updated", { detail: null }));
 };
 
-export const fetchCurrentUser = async () => {
+export const fetchCurrentUser = async (options?: { force?: boolean }) => {
+  const force = options?.force === true;
+
+  if (!force && meCache && meCache.expiresAt > Date.now()) {
+    return meCache.user;
+  }
+
+  if (!force && meInFlight) {
+    return meInFlight;
+  }
+
+  meInFlight = (async () => {
   try {
     const response = (await authRequest("me")) as Partial<AuthApiResponse>;
     if (!response.user) {
       throw new Error("Unauthorized");
     }
     setStoredUser(response.user);
+    meCache = { user: response.user, expiresAt: Date.now() + ME_CACHE_TTL_MS };
     return response.user;
   } catch (error) {
     setStoredUser(null);
+    meCache = null;
     throw error;
+  } finally {
+    meInFlight = null;
   }
+  })();
+
+  return meInFlight;
 };
