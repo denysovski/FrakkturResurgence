@@ -1,6 +1,6 @@
 import { getStoredUser } from "@/lib/auth";
-import { getProductByCategoryAndId } from "@/lib/catalog";
 import type { CategoryKey } from "@/lib/catalog";
+import { fetchProductByCategoryAndId, resolveImageUrl } from "@/lib/productsApi";
 
 export type WishlistItem = {
   key: string;
@@ -81,18 +81,52 @@ export const readWishlist = async (): Promise<WishlistItem[]> => {
   const response = await wishlistRequest("wishlist_get", "GET");
   const rawItems = Array.isArray(response?.items) ? response.items : [];
 
-  const items: WishlistItem[] = rawItems.map((item: { key: string; id: string; categoryKey: string }) => {
-    const product = getProductByCategoryAndId(item.categoryKey as CategoryKey, item.id);
-    return {
-      key: item.key,
-      id: item.id,
-      categoryKey: item.categoryKey,
-      categoryTitle: product?.categoryTitle || item.categoryKey,
-      name: product?.name || item.id,
-      price: product?.price || "€0.00",
-      image: product?.image || "",
-    };
-  });
+  const items: WishlistItem[] = await Promise.all(
+    rawItems.map(async (item: {
+      key: string;
+      id: string;
+      categoryKey: string;
+      categoryTitle?: string;
+      name?: string;
+      priceCents?: number;
+      imageKey?: string;
+    }) => {
+      if (item.name && typeof item.priceCents === "number") {
+        return {
+          key: item.key,
+          id: item.id,
+          categoryKey: item.categoryKey,
+          categoryTitle: item.categoryTitle || item.categoryKey,
+          name: item.name,
+          price: `€${(item.priceCents / 100).toFixed(2)}`,
+          image: item.imageKey ? resolveImageUrl(item.imageKey, item.categoryKey as CategoryKey, item.id) : "",
+        };
+      }
+
+      try {
+        const product = await fetchProductByCategoryAndId(item.categoryKey as CategoryKey, item.id);
+        return {
+          key: item.key,
+          id: item.id,
+          categoryKey: item.categoryKey,
+          categoryTitle: product.categoryTitle,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+        };
+      } catch {
+        return {
+          key: item.key,
+          id: item.id,
+          categoryKey: item.categoryKey,
+          categoryTitle: item.categoryTitle || item.categoryKey,
+          name: item.name || item.id,
+          price: typeof item.priceCents === "number" ? `€${(item.priceCents / 100).toFixed(2)}` : "€0.00",
+          image: item.imageKey ? resolveImageUrl(item.imageKey, item.categoryKey as CategoryKey, item.id) : "",
+        };
+      }
+    }),
+  );
 
   writeLocalWishlist(items);
   emitWishlistUpdated(items);
