@@ -1,6 +1,6 @@
 import type { CategoryKey } from "@/lib/catalog";
-import { getProductByCategoryAndId } from "@/lib/catalog";
 import { getStoredUser } from "@/lib/auth";
+import { fetchProductByCategoryAndId, resolveImageUrl } from "@/lib/productsApi";
 
 export type CartItem = {
   key: string;
@@ -82,19 +82,56 @@ export const readCart = async (): Promise<CartItem[]> => {
   const response = await cartRequest("cart_get", "GET");
   const rawItems = Array.isArray(response?.items) ? response.items : [];
 
-  const items: CartItem[] = rawItems.map((item: { key: string; id: string; categoryKey: CategoryKey; size: string; quantity: number }) => {
-    const product = getProductByCategoryAndId(item.categoryKey, item.id);
-    return {
-      key: item.key,
-      id: item.id,
-      categoryKey: item.categoryKey,
-      name: product?.name || item.id,
-      price: product?.price || "€0.00",
-      image: product?.image || "",
-      size: item.size,
-      quantity: item.quantity,
-    };
-  });
+  const items: CartItem[] = await Promise.all(
+    rawItems.map(async (item: {
+      key: string;
+      id: string;
+      categoryKey: CategoryKey;
+      name?: string;
+      priceCents?: number;
+      imageKey?: string;
+      size: string;
+      quantity: number;
+    }) => {
+      if (item.name && typeof item.priceCents === "number") {
+        return {
+          key: item.key,
+          id: item.id,
+          categoryKey: item.categoryKey,
+          name: item.name,
+          price: `€${(item.priceCents / 100).toFixed(2)}`,
+          image: item.imageKey ? resolveImageUrl(item.imageKey, item.categoryKey, item.id) : "",
+          size: item.size,
+          quantity: item.quantity,
+        };
+      }
+
+      try {
+        const product = await fetchProductByCategoryAndId(item.categoryKey, item.id);
+        return {
+          key: item.key,
+          id: item.id,
+          categoryKey: item.categoryKey,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          size: item.size,
+          quantity: item.quantity,
+        };
+      } catch {
+        return {
+          key: item.key,
+          id: item.id,
+          categoryKey: item.categoryKey,
+          name: item.name || item.id,
+          price: typeof item.priceCents === "number" ? `€${(item.priceCents / 100).toFixed(2)}` : "€0.00",
+          image: item.imageKey ? resolveImageUrl(item.imageKey, item.categoryKey, item.id) : "",
+          size: item.size,
+          quantity: item.quantity,
+        };
+      }
+    }),
+  );
 
   writeLocalCart(items);
   emitCartUpdated(items);
