@@ -51,9 +51,14 @@ function is_debug_enabled()
 
 function table_has_column($pdo, $table, $column)
 {
-    $sql = 'SHOW COLUMNS FROM `' . str_replace('`', '', $table) . '` LIKE ?';
+        $sql = 'SELECT 1
+                        FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = ?
+                            AND COLUMN_NAME = ?
+                        LIMIT 1';
     $stmt = $pdo->prepare($sql);
-    $stmt->execute(array($column));
+        $stmt->execute(array($table, $column));
     return (bool) $stmt->fetch();
 }
 
@@ -69,6 +74,10 @@ function require_auth_user_id()
 
 function require_admin_user_id($pdo)
 {
+    if (!table_has_column($pdo, 'users', 'is_admin')) {
+        error_response('Forbidden', 403);
+    }
+
     $userId = require_auth_user_id();
     $stmt = $pdo->prepare('SELECT is_admin FROM users WHERE id = ? LIMIT 1');
     $stmt->execute(array($userId));
@@ -147,10 +156,19 @@ function ensure_user_item_tables($pdo)
 function ensure_admin_schema_and_account($pdo)
 {
     if (!table_has_column($pdo, 'users', 'is_admin')) {
-        $pdo->exec("ALTER TABLE users ADD COLUMN is_admin TINYINT(1) NOT NULL DEFAULT 0");
+        try {
+            $pdo->exec("ALTER TABLE users ADD COLUMN is_admin TINYINT(1) NOT NULL DEFAULT 0");
+        } catch (Exception $e) {
+            error_log('[frakktur-auth] could not add is_admin column: ' . $e->getMessage());
+        }
     }
 
+    $hasIsAdmin = table_has_column($pdo, 'users', 'is_admin');
     $hasStatus = table_has_column($pdo, 'users', 'status');
+
+    if ($hasStatus) {
+        $pdo->exec("UPDATE users SET status = 'active' WHERE status <> 'active'");
+    }
 
     $adminEmail = 'dankosvobodkaaaa@gmail.com';
     $adminName = 'Daniel';
@@ -162,21 +180,33 @@ function ensure_admin_schema_and_account($pdo)
     $existing = $stmt->fetch();
 
     if ($existing) {
-        if ($hasStatus) {
-            $upd = $pdo->prepare('UPDATE users SET full_name = ?, password_hash = ?, is_admin = 1, status = "active" WHERE id = ?');
+        if ($hasStatus && $hasIsAdmin) {
+            $upd = $pdo->prepare("UPDATE users SET full_name = ?, password_hash = ?, is_admin = 1, status = 'active' WHERE id = ?");
+            $upd->execute(array($adminName, $adminHash, (int) $existing['id']));
+        } else if ($hasStatus) {
+            $upd = $pdo->prepare("UPDATE users SET full_name = ?, password_hash = ?, status = 'active' WHERE id = ?");
+            $upd->execute(array($adminName, $adminHash, (int) $existing['id']));
+        } else if ($hasIsAdmin) {
+            $upd = $pdo->prepare('UPDATE users SET full_name = ?, password_hash = ?, is_admin = 1 WHERE id = ?');
             $upd->execute(array($adminName, $adminHash, (int) $existing['id']));
         } else {
-            $upd = $pdo->prepare('UPDATE users SET full_name = ?, password_hash = ?, is_admin = 1 WHERE id = ?');
+            $upd = $pdo->prepare('UPDATE users SET full_name = ?, password_hash = ? WHERE id = ?');
             $upd->execute(array($adminName, $adminHash, (int) $existing['id']));
         }
         return;
     }
 
-    if ($hasStatus) {
-        $ins = $pdo->prepare('INSERT INTO users (email, full_name, password_hash, status, is_admin) VALUES (?, ?, ?, "active", 1)');
+    if ($hasStatus && $hasIsAdmin) {
+        $ins = $pdo->prepare("INSERT INTO users (email, full_name, password_hash, status, is_admin) VALUES (?, ?, ?, 'active', 1)");
+        $ins->execute(array($adminEmail, $adminName, $adminHash));
+    } else if ($hasStatus) {
+        $ins = $pdo->prepare("INSERT INTO users (email, full_name, password_hash, status) VALUES (?, ?, ?, 'active')");
+        $ins->execute(array($adminEmail, $adminName, $adminHash));
+    } else if ($hasIsAdmin) {
+        $ins = $pdo->prepare('INSERT INTO users (email, full_name, password_hash, is_admin) VALUES (?, ?, ?, 1)');
         $ins->execute(array($adminEmail, $adminName, $adminHash));
     } else {
-        $ins = $pdo->prepare('INSERT INTO users (email, full_name, password_hash, is_admin) VALUES (?, ?, ?, 1)');
+        $ins = $pdo->prepare('INSERT INTO users (email, full_name, password_hash) VALUES (?, ?, ?)');
         $ins->execute(array($adminEmail, $adminName, $adminHash));
     }
 }
@@ -252,6 +282,114 @@ function map_product_row_for_frontend($row)
     );
 }
 
+function admin_asset_categories()
+{
+    return array('tshirts', 'hoodies', 'caps', 'belts', 'pants', 'knitwear', 'leather-jackets');
+}
+
+function category_image_prefix($categoryKey)
+{
+    $map = array(
+        'tshirts' => 't',
+        'hoodies' => 'h',
+        'caps' => 'c',
+        'belts' => 'b',
+        'pants' => 'p',
+        'knitwear' => 'k',
+        'leather-jackets' => 'j',
+    );
+
+    return isset($map[$categoryKey]) ? $map[$categoryKey] : 'img';
+}
+
+function derive_product_code($categoryKey, $imageKey)
+{
+    $normalizedKey = normalize_image_key_for_storage($imageKey, $categoryKey);
+    $fileName = trim((string) basename((string) $normalizedKey));
+    if ($fileName !== '') {
+        $baseName = strtolower((string) pathinfo($fileName, PATHINFO_FILENAME));
+        if (preg_match('/^[a-z][0-9]+$/', $baseName)) {
+            return $baseName;
+        }
+    }
+
+    $prefix = category_image_prefix($categoryKey);
+    return $prefix . time();
+}
+
+function normalize_image_key_for_storage($imageKey, $categoryKey)
+{
+    $value = trim((string) $imageKey);
+    if ($value === '') {
+        return '';
+    }
+
+    if (preg_match('/^https?:\/\//i', $value)) {
+        return $value;
+    }
+
+    $value = str_replace('\\', '/', $value);
+    $parts = explode('/', $value);
+    $filename = trim((string) end($parts));
+    if ($filename === '') {
+        return '';
+    }
+
+    $categories = admin_asset_categories();
+    foreach ($categories as $category) {
+        if (strpos($value, $category . '/') !== false) {
+            return $category . '/' . $filename;
+        }
+    }
+
+    if (in_array($categoryKey, $categories, true)) {
+        return $categoryKey . '/' . $filename;
+    }
+
+    return $filename;
+}
+
+function list_assets_for_category($baseDir, $categoryKey)
+{
+    $dir = $baseDir . '/' . $categoryKey;
+    if (!is_dir($dir)) {
+        return array();
+    }
+
+    $result = array();
+    $entries = scandir($dir);
+    if (!is_array($entries)) {
+        return array();
+    }
+
+    foreach ($entries as $entry) {
+        if ($entry === '.' || $entry === '..') {
+            continue;
+        }
+
+        $path = $dir . '/' . $entry;
+        if (!is_file($path)) {
+            continue;
+        }
+
+        if (!preg_match('/\.(jpg|jpeg|png|webp|gif)$/i', $entry)) {
+            continue;
+        }
+
+        $result[] = array(
+            'category' => $categoryKey,
+            'fileName' => $entry,
+            'imageKey' => $categoryKey . '/' . $entry,
+        );
+    }
+
+    usort($result, function ($a, $b) {
+        return strcmp($a['fileName'], $b['fileName']);
+    });
+
+    return $result;
+}
+
 $emailRe = '/^[^\s@]+@[^\s@]+\.[^\s@]+$/';
 $action = isset($_GET['action']) ? strtolower(trim((string) $_GET['action'])) : '';
 $method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
@@ -259,13 +397,19 @@ $method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET'
 try {
     $pdo = get_pdo();
     ensure_admin_schema_and_account($pdo);
+    $hasIsAdmin = table_has_column($pdo, 'users', 'is_admin');
+    $hasStatus = table_has_column($pdo, 'users', 'status');
 
     if ($action === 'me' && $method === 'GET') {
         $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
         if (!is_numeric($userId)) {
             error_response('Unauthorized', 401);
         }
-        $stmt = $pdo->prepare('SELECT id, email, full_name, is_admin FROM users WHERE id = ? LIMIT 1');
+        if ($hasIsAdmin) {
+            $stmt = $pdo->prepare('SELECT id, email, full_name, is_admin FROM users WHERE id = ? LIMIT 1');
+        } else {
+            $stmt = $pdo->prepare('SELECT id, email, full_name, 0 AS is_admin FROM users WHERE id = ? LIMIT 1');
+        }
         $stmt->execute(array((int) $userId));
         $user = $stmt->fetch();
 
@@ -313,12 +457,17 @@ try {
         }
 
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
-        $hasStatus = table_has_column($pdo, 'users', 'status');
-        if ($hasStatus) {
-            $insert = $pdo->prepare('INSERT INTO users (email, full_name, password_hash, status, is_admin) VALUES (?, ?, ?, "active", 0)');
+        if ($hasStatus && $hasIsAdmin) {
+            $insert = $pdo->prepare("INSERT INTO users (email, full_name, password_hash, status, is_admin) VALUES (?, ?, ?, 'active', 0)");
+            $insert->execute(array($email, $fullName, $passwordHash));
+        } else if ($hasStatus) {
+            $insert = $pdo->prepare("INSERT INTO users (email, full_name, password_hash, status) VALUES (?, ?, ?, 'active')");
+            $insert->execute(array($email, $fullName, $passwordHash));
+        } else if ($hasIsAdmin) {
+            $insert = $pdo->prepare('INSERT INTO users (email, full_name, password_hash, is_admin) VALUES (?, ?, ?, 0)');
             $insert->execute(array($email, $fullName, $passwordHash));
         } else {
-            $insert = $pdo->prepare('INSERT INTO users (email, full_name, password_hash, is_admin) VALUES (?, ?, ?, 0)');
+            $insert = $pdo->prepare('INSERT INTO users (email, full_name, password_hash) VALUES (?, ?, ?)');
             $insert->execute(array($email, $fullName, $passwordHash));
         }
 
@@ -345,7 +494,11 @@ try {
             error_response('Invalid email or password.', 401);
         }
 
-        $stmt = $pdo->prepare('SELECT id, email, full_name, password_hash, is_admin FROM users WHERE email = ? LIMIT 1');
+        if ($hasIsAdmin) {
+            $stmt = $pdo->prepare('SELECT id, email, full_name, password_hash, is_admin FROM users WHERE email = ? LIMIT 1');
+        } else {
+            $stmt = $pdo->prepare('SELECT id, email, full_name, password_hash, 0 AS is_admin FROM users WHERE email = ? LIMIT 1');
+        }
         $stmt->execute(array($email));
         $user = $stmt->fetch();
 
@@ -540,7 +693,6 @@ try {
         foreach ($rows as $row) {
             $pid = (int) $row['id'];
             $categoryKey = (string) $row['category_key'];
-            ensure_size_rows_for_product($pdo, $pid, $categoryKey);
 
             $productMap[$pid] = array(
                 'dbId' => $pid,
@@ -579,23 +731,25 @@ try {
         require_admin_user_id($pdo);
         $body = read_json_body();
 
+        $dbId = isset($body['dbId']) && is_numeric($body['dbId']) ? (int) $body['dbId'] : 0;
         $categoryKey = isset($body['categoryKey']) ? trim((string) $body['categoryKey']) : '';
         $productCode = isset($body['id']) ? trim((string) $body['id']) : '';
         $name = isset($body['name']) ? trim((string) $body['name']) : '';
         $description = isset($body['description']) ? trim((string) $body['description']) : '';
         $material = isset($body['material']) ? trim((string) $body['material']) : '';
         $sustainability = isset($body['sustainability']) ? trim((string) $body['sustainability']) : '';
-        $imageKey = isset($body['imageKey']) ? trim((string) $body['imageKey']) : '';
+        $imageKey = isset($body['imageKey']) ? normalize_image_key_for_storage($body['imageKey'], $categoryKey) : '';
         $isActive = isset($body['isActive']) ? ((bool) $body['isActive']) : true;
-+
-+        $sizeStocksInput = isset($body['sizeStocks']) && is_array($body['sizeStocks']) ? $body['sizeStocks'] : array();
+        $sizeStocksInput = isset($body['sizeStocks']) && is_array($body['sizeStocks']) ? $body['sizeStocks'] : array();
 
-        if ($categoryKey === '' || $name === '') {
-            error_response('Category and name are required.', 400);
+        $priceCents = isset($body['priceCents']) ? max(0, (int) $body['priceCents']) : 0;
+
+        if ($categoryKey === '' || $name === '' || $description === '' || $material === '' || $sustainability === '' || $imageKey === '') {
+            error_response('Category, name, description, material, sustainability, and image are required.', 400);
         }
 
         if ($productCode === '') {
-            $productCode = substr($categoryKey, 0, 2) . '_' . time();
+            $productCode = derive_product_code($categoryKey, $imageKey);
         }
 
         $stmtCat = $pdo->prepare('SELECT id, title FROM categories WHERE slug = ? LIMIT 1');
@@ -610,7 +764,7 @@ try {
         $sizeStocks = array();
         $stockTotal = 0;
         foreach ($expectedSizes as $sizeCode) {
-            $incoming = isset($sizeStocksInput[$sizeCode]) ? (int) $sizeStocksInput[$sizeCode] : rand(0, 100);
+            $incoming = isset($sizeStocksInput[$sizeCode]) ? (int) $sizeStocksInput[$sizeCode] : 0;
             if ($incoming < 0) {
                 $incoming = 0;
             }
@@ -621,55 +775,75 @@ try {
             $stockTotal += $incoming;
         }
 
-        $stmtExisting = $pdo->prepare('SELECT id FROM products WHERE product_code = ? LIMIT 1');
-        $stmtExisting->execute(array($productCode));
-        $existing = $stmtExisting->fetch();
-
-        if ($existing) {
-            $productId = (int) $existing['id'];
-            $upd = $pdo->prepare(
-                'UPDATE products
-                 SET category_id = ?, name = ?, description = ?, stock_total = ?, price_cents = ?, material = ?, sustainability = ?, image_key = ?, is_active = ?, has_sizes = ?
-                 WHERE id = ?'
-            );
-            $upd->execute(array(
-                $categoryId,
-                $name,
-                $description,
-                $stockTotal,
-                isset($body['priceCents']) ? max(0, (int) $body['priceCents']) : 0,
-                $material,
-                $sustainability,
-                $imageKey,
-                $isActive ? 1 : 0,
-                (count($expectedSizes) === 1 && $expectedSizes[0] === 'UNI') ? 0 : 1,
-                $productId,
-            ));
-        } else {
-            $ins = $pdo->prepare(
-                'INSERT INTO products (category_id, product_code, name, description, stock_total, price_cents, material, sustainability, image_key, has_sizes, is_active)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-            );
-            $ins->execute(array(
-                $categoryId,
-                $productCode,
-                $name,
-                $description,
-                $stockTotal,
-                isset($body['priceCents']) ? max(0, (int) $body['priceCents']) : 0,
-                $material,
-                $sustainability,
-                $imageKey,
-                (count($expectedSizes) === 1 && $expectedSizes[0] === 'UNI') ? 0 : 1,
-                $isActive ? 1 : 0,
-            ));
-            $productId = (int) $pdo->lastInsertId();
+        $existing = null;
+        if ($dbId > 0) {
+            $stmtExisting = $pdo->prepare('SELECT id FROM products WHERE id = ? LIMIT 1');
+            $stmtExisting->execute(array($dbId));
+            $existing = $stmtExisting->fetch();
         }
 
-        $pdo->prepare('DELETE FROM product_sizes WHERE product_id = ?')->execute(array($productId));
-        $insSize = $pdo->prepare('INSERT INTO product_sizes (product_id, size_code, stock) VALUES (?, ?, ?)');
-        foreach ($sizeStocks as $sizeCode => $stock) {
-            $insSize->execute(array($productId, $sizeCode, $stock));
+        if (!$existing && $productCode !== '') {
+            $stmtExisting = $pdo->prepare('SELECT id FROM products WHERE product_code = ? LIMIT 1');
+            $stmtExisting->execute(array($productCode));
+            $existing = $stmtExisting->fetch();
+        }
+
+        $pdo->beginTransaction();
+        try {
+            if ($existing) {
+                $productId = (int) $existing['id'];
+                $upd = $pdo->prepare(
+                    'UPDATE products
+                     SET category_id = ?, product_code = ?, name = ?, description = ?, stock_total = ?, price_cents = ?, material = ?, sustainability = ?, image_key = ?, is_active = ?, has_sizes = ?
+                     WHERE id = ?'
+                );
+                $upd->execute(array(
+                    $categoryId,
+                    $productCode,
+                    $name,
+                    $description,
+                    $stockTotal,
+                    $priceCents,
+                    $material,
+                    $sustainability,
+                    $imageKey,
+                    $isActive ? 1 : 0,
+                    (count($expectedSizes) === 1 && $expectedSizes[0] === 'UNI') ? 0 : 1,
+                    $productId,
+                ));
+            } else {
+                $ins = $pdo->prepare(
+                    'INSERT INTO products (category_id, product_code, name, description, stock_total, price_cents, material, sustainability, image_key, has_sizes, is_active)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                );
+                $ins->execute(array(
+                    $categoryId,
+                    $productCode,
+                    $name,
+                    $description,
+                    $stockTotal,
+                    $priceCents,
+                    $material,
+                    $sustainability,
+                    $imageKey,
+                    (count($expectedSizes) === 1 && $expectedSizes[0] === 'UNI') ? 0 : 1,
+                    $isActive ? 1 : 0,
+                ));
+                $productId = (int) $pdo->lastInsertId();
+            }
+
+            $pdo->prepare('DELETE FROM product_sizes WHERE product_id = ?')->execute(array($productId));
+            $insSize = $pdo->prepare('INSERT INTO product_sizes (product_id, size_code, stock) VALUES (?, ?, ?)');
+            foreach ($sizeStocks as $sizeCode => $stock) {
+                $insSize->execute(array($productId, $sizeCode, $stock));
+            }
+
+            $pdo->commit();
+        } catch (Exception $inner) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $inner;
         }
 
         json_response(array('ok' => true, 'productId' => $productId, 'productCode' => $productCode), 200);
@@ -688,7 +862,25 @@ try {
         json_response(array('ok' => true), 200);
     }
 
-    if ($action === 'admin_upload_image' && $method === 'POST') {
+    if ($action === 'admin_assets_list' && $method === 'GET') {
+        require_admin_user_id($pdo);
+
+        $baseAssetsDir = __DIR__ . '/assets';
+        $filterCategory = isset($_GET['category']) ? trim((string) $_GET['category']) : 'all';
+        $categories = admin_asset_categories();
+
+        $items = array();
+        foreach ($categories as $category) {
+            if ($filterCategory !== 'all' && $filterCategory !== $category) {
+                continue;
+            }
+            $items = array_merge($items, list_assets_for_category($baseAssetsDir, $category));
+        }
+
+        json_response(array('items' => $items), 200);
+    }
+
+    if (($action === 'admin_asset_upload' || $action === 'admin_upload_image') && $method === 'POST') {
         require_admin_user_id($pdo);
 
         if (!isset($_FILES['image']) || !is_array($_FILES['image'])) {
@@ -712,20 +904,76 @@ try {
             error_response('Unsupported image format.', 400);
         }
 
-        $uploadDir = __DIR__ . '/uploads/products';
+        $categoryKey = isset($_POST['category']) ? trim((string) $_POST['category']) : '';
+        if (!in_array($categoryKey, admin_asset_categories(), true)) {
+            error_response('Category is required.', 400);
+        }
+
+        $uploadDir = __DIR__ . '/assets/' . $categoryKey;
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
 
-        $filename = 'prod_' . str_replace('.', '', uniqid('', true)) . '.' . $ext;
+        $prefix = category_image_prefix($categoryKey);
+        $nextIndex = 0;
+        $entries = scandir($uploadDir);
+        if (is_array($entries)) {
+            foreach ($entries as $entry) {
+                if (preg_match('/^' . preg_quote($prefix, '/') . '(\d+)\.(jpg|jpeg|png|webp|gif)$/i', $entry, $matches)) {
+                    $n = (int) $matches[1];
+                    if ($n > $nextIndex) {
+                        $nextIndex = $n;
+                    }
+                }
+            }
+        }
+        $nextIndex += 1;
+        $filename = $prefix . $nextIndex . '.' . $ext;
         $target = $uploadDir . '/' . $filename;
 
         if (!move_uploaded_file($tmp, $target)) {
             error_response('Failed to move uploaded image.', 500);
         }
 
-        $imageKey = 'uploads/products/' . $filename;
+        $imageKey = $categoryKey . '/' . $filename;
         json_response(array('ok' => true, 'imageKey' => $imageKey), 200);
+    }
+
+    if ($action === 'admin_asset_delete' && $method === 'POST') {
+        require_admin_user_id($pdo);
+
+        $body = read_json_body();
+        $rawImageKey = isset($body['imageKey']) ? (string) $body['imageKey'] : '';
+        $normalized = normalize_image_key_for_storage($rawImageKey, '');
+        if ($normalized === '') {
+            error_response('Image key is required.', 400);
+        }
+
+        $parts = explode('/', str_replace('\\', '/', $normalized));
+        if (count($parts) < 2) {
+            error_response('Invalid image key.', 400);
+        }
+
+        $categoryKey = trim((string) $parts[0]);
+        if (!in_array($categoryKey, admin_asset_categories(), true)) {
+            error_response('Invalid image category.', 400);
+        }
+
+        $fileName = basename(trim((string) end($parts)));
+        if ($fileName === '' || !preg_match('/\.(jpg|jpeg|png|webp|gif)$/i', $fileName)) {
+            error_response('Invalid image file.', 400);
+        }
+
+        $target = __DIR__ . '/assets/' . $categoryKey . '/' . $fileName;
+        if (!is_file($target)) {
+            json_response(array('ok' => true, 'deleted' => false), 200);
+        }
+
+        if (!unlink($target)) {
+            error_response('Failed to delete image file.', 500);
+        }
+
+        json_response(array('ok' => true, 'deleted' => true), 200);
     }
 
     if ($action === 'cart_get' && $method === 'GET') {

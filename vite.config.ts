@@ -17,6 +17,20 @@ export default defineConfig(({ mode }) => {
         overlay: false,
       },
     },
+    build: {
+      minify: "esbuild",
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-ui': ['lucide-react'],
+          },
+        },
+      },
+      reportCompressedSize: false,
+      cssCodeSplit: true,
+      chunkSizeWarningLimit: 1000,
+    },
     plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
     resolve: {
       alias: {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import PageLayout from "@/pages/PageLayout";
 import { fetchCurrentUser } from "@/lib/auth";
@@ -75,6 +75,49 @@ const extractImageFileName = (imageKey?: string) => {
   return imageKey.trim().replace(/[?#].*$/, "").split("/").pop() || "";
 };
 
+const ProductListItem = memo(
+  ({
+    product,
+    onEdit,
+    onDelete,
+  }: {
+    product: AdminProduct;
+    onEdit: (product: AdminProduct) => void;
+    onDelete: (id: string) => void;
+  }) => (
+    <div className="border border-border p-3 rounded-sm">
+      <div className="flex items-start gap-3">
+        <div className="w-[100px] h-[100px] border border-border overflow-hidden bg-secondary rounded-sm shrink-0">
+          {product.imageKey ? (
+            <img
+              src={resolveImageUrl(product.imageKey, product.categoryKey, "preview")}
+              alt={product.name}
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+              className="w-full h-full object-cover"
+            />
+          ) : null}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{product.id} · {product.name}</p>
+          <p className="text-xs text-muted-foreground">{product.categoryTitle} · €{(product.priceCents / 100).toFixed(2)}</p>
+          <p className="text-xs text-muted-foreground mt-1">Stock total: {product.stockTotal}</p>
+        </div>
+      </div>
+      <div className="mt-2 flex gap-2">
+        <button type="button" onClick={() => onEdit(product)} className="text-xs underline">
+          Edit
+        </button>
+        <button type="button" onClick={() => onDelete(product.id)} className="text-xs underline text-destructive">
+          Delete
+        </button>
+      </div>
+    </div>
+  )
+);
+ProductListItem.displayName = "ProductListItem";
+
 const AdminProductsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -100,6 +143,56 @@ const AdminProductsPage = () => {
     setDescriptionOptions(optionsResponse.descriptions);
     setSustainabilityOptions(optionsResponse.sustainability);
   };
+
+  const fillFromProduct = useCallback((product: AdminProduct) => {
+    setForm({
+      dbId: product.dbId,
+      id: product.id,
+      categoryKey: product.categoryKey,
+      name: product.name,
+      description: product.description,
+      material: product.material,
+      sustainability: product.sustainability,
+      imageKey: product.imageKey || "",
+      isActive: product.isActive,
+      priceCents: product.priceCents,
+      sizeStocks: product.sizeStocks,
+    });
+  }, []);
+
+  const onCategoryChange = useCallback((categoryKey: CategoryKey) => {
+    const nextSizes = getSizesForCategory(categoryKey);
+    const nextStocks: Record<string, number> = {};
+    nextSizes.forEach((size) => {
+      nextStocks[size] = form.sizeStocks[size] ?? 0;
+    });
+
+    setForm((prev) => ({
+      ...prev,
+      categoryKey,
+      sizeStocks: nextStocks,
+    }));
+  }, [form.sizeStocks]);
+
+  const onDelete = useCallback(async (id: string) => {
+    if (!window.confirm(`Delete product ${id}?`)) {
+      return;
+    }
+
+    try {
+      await deleteAdminProduct(id);
+      await refresh();
+      if (form.id === id) {
+        setForm(emptyForm());
+      }
+      toast({ title: "Deleted", description: `${id} was removed.` });
+    } catch (error) {
+      toast({
+        title: "Delete failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
+    }
+  }, [form.id, toast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,42 +223,12 @@ const AdminProductsPage = () => {
     };
   }, [navigate]);
 
-  const fillFromProduct = (product: AdminProduct) => {
-    setForm({
-      dbId: product.dbId,
-      id: product.id,
-      categoryKey: product.categoryKey,
-      name: product.name,
-      description: product.description,
-      material: product.material,
-      sustainability: product.sustainability,
-      imageKey: product.imageKey || "",
-      isActive: product.isActive,
-      priceCents: product.priceCents,
-      sizeStocks: product.sizeStocks,
-    });
-  };
-
-  const onCategoryChange = (categoryKey: CategoryKey) => {
-    const nextSizes = getSizesForCategory(categoryKey);
-    const nextStocks: Record<string, number> = {};
-    nextSizes.forEach((size) => {
-      nextStocks[size] = form.sizeStocks[size] ?? 0;
-    });
-
-    setForm((prev) => ({
-      ...prev,
-      categoryKey,
-      sizeStocks: nextStocks,
-    }));
-  };
-
-  const openImageSelector = () => {
+  const openImageSelector = useCallback(() => {
     const base = import.meta.env.BASE_URL || "/";
     const normalizedBase = base.endsWith("/") ? base : `${base}/`;
     const url = `${window.location.origin}${normalizedBase}admin/assets?pick=1&category=${encodeURIComponent(form.categoryKey)}`;
     window.open(url, "frakktur-asset-picker", "width=1280,height=850");
-  };
+  }, [form.categoryKey]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -186,7 +249,7 @@ const AdminProductsPage = () => {
     return () => window.removeEventListener("message", onMessage);
   }, [toast]);
 
-  const onSave = async () => {
+  const onSave = useCallback(async () => {
     if (!form.name.trim()) {
       toast({ title: "Name required", description: "Please enter product name." });
       return;
@@ -226,9 +289,9 @@ const AdminProductsPage = () => {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [form, sizeKeys, toast]);
 
-  const onDelete = async (id: string) => {
+  const onDeleteDuplicate = async (id: string) => {
     if (!window.confirm(`Delete product ${id}?`)) {
       return;
     }
@@ -436,31 +499,12 @@ const AdminProductsPage = () => {
             </div>
             <div className="space-y-2 max-h-[72vh] overflow-auto pr-1">
               {filteredProducts.map((product) => (
-                <div key={product.dbId} className="border border-border p-3 rounded-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="w-[100px] h-[100px] border border-border overflow-hidden bg-secondary rounded-sm shrink-0">
-                      {product.imageKey ? (
-                        <img
-                          src={toImagePreviewUrl(product.imageKey, product.categoryKey)}
-                          alt={product.name}
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                          }}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : null}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{product.id} · {product.name}</p>
-                      <p className="text-xs text-muted-foreground">{product.categoryTitle} · €{(product.priceCents / 100).toFixed(2)}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Stock total: {product.stockTotal}</p>
-                    </div>
-                  </div>
-                  <div className="mt-2 flex gap-2">
-                    <button type="button" onClick={() => fillFromProduct(product)} className="text-xs underline">Edit</button>
-                    <button type="button" onClick={() => void onDelete(product.id)} className="text-xs underline text-destructive">Delete</button>
-                  </div>
-                </div>
+                <ProductListItem
+                  key={product.dbId}
+                  product={product}
+                  onEdit={fillFromProduct}
+                  onDelete={onDelete}
+                />
               ))}
 
               {filteredProducts.length === 0 ? (

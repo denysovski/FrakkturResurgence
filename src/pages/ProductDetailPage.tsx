@@ -658,7 +658,7 @@ const ProductDetailPage = () => {
                   className="text-left group"
                 >
                   <div className="aspect-square overflow-hidden bg-secondary mb-2 rounded-sm">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={item.image} alt={item.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   </div>
                   <p className="text-xs leading-tight">{item.name}</p>
                   <p className="text-xs text-muted-foreground">{item.price}</p>
@@ -682,7 +682,7 @@ const ProductDetailPage = () => {
                 style={{ animationDelay: `${idx * 0.1}s` }}
               >
                 <div className="aspect-square overflow-hidden bg-secondary mb-3 rounded-sm">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img src={item.image} alt={item.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
                 <p className="text-sm leading-tight group-hover:opacity-70 transition-opacity">{item.name}</p>
                 <p className="text-xs text-muted-foreground">{item.price}</p>
@@ -706,6 +706,7 @@ const ProductDetailPage = () => {
                   <img
                     src={item.image}
                     alt={item.name}
+                    loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
