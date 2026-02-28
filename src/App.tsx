@@ -28,14 +28,8 @@ import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
 import WishlistPage from "./pages/WishlistPage";
 import OrdersPage from "./pages/OrdersPage";
-import { getStoredUser, isAuthenticated } from "./lib/auth";
 import AdminProductsPage from "./pages/AdminProductsPage";
 import AdminAssetsPage from "./pages/AdminAssetsPage";
-
-const isAdminAuthenticated = () => {
-  const user = getStoredUser();
-  return Boolean(user && user.isAdmin);
-};
 
 const queryClient = new QueryClient();
 
@@ -62,17 +56,11 @@ const App = () => (
           <Route path="/cart" element={<CartPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/orders" element={<OrdersPage />} />
-          <Route
-            path="/admin/products"
-            element={isAdminAuthenticated() ? <AdminProductsPage /> : <Navigate to="/auth/login" replace />}
-          />
-          <Route
-            path="/admin/assets"
-            element={isAdminAuthenticated() ? <AdminAssetsPage /> : <Navigate to="/auth/login" replace />}
-          />
+          <Route path="/admin/products" element={<AdminProductsPage />} />
+          <Route path="/admin/assets" element={<AdminAssetsPage />} />
           
           {/* Auth */}
-          <Route path="/auth/login" element={isAuthenticated() ? <Navigate to="/" replace /> : <LoginPage />} />
+          <Route path="/auth/login" element={<LoginPage />} />
           
           {/* Info Pages */}
           <Route path="/club" element={<ClubPage />} />
