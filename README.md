@@ -5,6 +5,6 @@ The frontend is built with React, TypeScript, Vite, and Tailwind CSS, with empha
 
 On the backend side, the project uses a MySQL database to persist users, products, carts, wishlists, and orders. Authentication and data handling are connected to the frontend via a simple PHP-based API layer. Database management and inspection are done through phpMyAdmin, and the project is deployed on Endora shared hosting, using WebFTP for production uploads.
 
-Overall, FrakkturResurgence demonstrates practical skills in frontend development, backend integration, database design, and real-world deployment on shared hosting—mirroring how small to mid-scale web projects are often built and maintained outside of purely local or cloud-native environments.
+Overall, FrakkturResurgence demonstrates practical skills in frontend development, backend integration, database design, and real world deployment on shared hosting mirroring how small to mid scale web projects are often built and maintained outside of purely local or cloud native environments.
 
 <img alt="screencapture-testdomain-pp-mzf-cz-frakkturresurgence-2026-02-28-18_30_32" src="https://github.com/user-attachments/assets/5d06c68a-8ecc-4d37-89cc-57a4955eb232" />
