@@ -90,7 +90,7 @@ const CollectionPage = ({
         );
       } catch {
         if (!cancelled) {
-          setLiveProducts(products);
+          setLiveProducts([]);
         }
       } finally {
         if (!cancelled) {

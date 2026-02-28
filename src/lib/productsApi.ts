@@ -38,29 +38,6 @@ export type AdminAssetItem = {
   imageKey: string;
 };
 
-const TSHIRT_NAME_BY_CODE: Record<string, string> = {
-  t1: "Designer Ron",
-  t2: "Marco Shirt",
-  t3: "Noir Pulse Tee",
-  t4: "Urban Signal",
-  t5: "Static Drift",
-  t6: "Chrome Echo",
-  t7: "Midnight Frame",
-  t8: "Shadowline Tee",
-  t9: "District Form",
-  t10: "Vector Tide",
-  ts1: "Designer Ron",
-  ts2: "Marco Shirt",
-  ts3: "Noir Pulse Tee",
-  ts4: "Urban Signal",
-  ts5: "Static Drift",
-  ts6: "Chrome Echo",
-  ts7: "Midnight Frame",
-  ts8: "Shadowline Tee",
-  ts9: "District Form",
-  ts10: "Vector Tide",
-};
-
 const CATEGORY_PREFIX_TO_KEY: Record<string, CategoryKey> = {
   t: "tshirts",
   h: "hoodies",
@@ -200,7 +177,7 @@ const request = async <T>(action: string, init?: RequestInit): Promise<T> => {
 
 const mapDbProduct = (product: DbProduct) => ({
   ...product,
-  name: product.categoryKey === "tshirts" ? TSHIRT_NAME_BY_CODE[product.id.toLowerCase()] || product.name : product.name,
+  name: product.name,
   image: resolveImageUrl(product.imageKey, product.categoryKey, product.id),
 });
 
