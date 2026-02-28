@@ -6,7 +6,8 @@ import CartSidebar from "./CartSidebar";
 import { readCart, type CartItem } from "@/lib/cart";
 import { getStoredUser, logoutUser, type AuthUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { getAllProducts } from "@/lib/catalog";
+import { getAllProducts, type CategoryKey } from "@/lib/catalog";
+import { fetchProductsByCategory } from "@/lib/productsApi";
 
 import logoInvert from "@/assets/frakktur-icon-invert.png";
 
@@ -29,7 +30,7 @@ const secondaryMenuLinks = [
 
 type LatestProduct = {
   id: string;
-  categoryKey: string;
+  categoryKey: CategoryKey;
   name: string;
   price: string;
   image: string;
@@ -68,23 +69,52 @@ export default function Navbar({
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [latestProducts, setLatestProducts] = useState<LatestProduct[]>([]);
   const lastScrollY = useRef(0);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const latestProducts = useMemo<LatestProduct[]>(() => {
-    const allowedCategories = new Set(["tshirts", "hoodies", "caps", "belts"]);
-    const candidates = getAllProducts().filter((product) => allowedCategories.has(product.categoryKey));
-    const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+  useEffect(() => {
+    let cancelled = false;
 
-    return shuffled.slice(0, 4).map((product) => ({
-      id: product.id,
-      categoryKey: product.categoryKey,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-    }));
+    const loadLatest = async () => {
+      const categories: CategoryKey[] = ["tshirts", "hoodies", "caps", "belts", "pants", "knitwear", "leather-jackets"];
+      try {
+        const response = await Promise.all(categories.map((category) => fetchProductsByCategory(category)));
+        const merged = response.flat();
+        const shuffled = [...merged].sort(() => Math.random() - 0.5);
+        if (!cancelled) {
+          setLatestProducts(
+            shuffled.slice(0, 4).map((item) => ({
+              id: item.id,
+              categoryKey: item.categoryKey,
+              name: item.name,
+              price: item.price,
+              image: item.image,
+            })),
+          );
+        }
+      } catch {
+        const fallback = [...getAllProducts()].sort(() => Math.random() - 0.5).slice(0, 4);
+        if (!cancelled) {
+          setLatestProducts(
+            fallback.map((item) => ({
+              id: item.id,
+              categoryKey: item.categoryKey,
+              name: item.name,
+              price: item.price,
+              image: item.image,
+            })),
+          );
+        }
+      }
+    };
+
+    void loadLatest();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -305,6 +335,18 @@ export default function Navbar({
                           className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
                         >
                           Admin products
+                        </button>
+                      )}
+                      {currentUser.isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            navigate("/admin/assets");
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                        >
+                          Admin assets
                         </button>
                       )}
                       <button

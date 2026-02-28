@@ -9,11 +9,13 @@ export default function CustomCursor() {
   useEffect(() => {
     const handleMove = (event: MouseEvent) => {
       setCrosshair({ x: event.clientX, y: event.clientY });
-      setIsVisible(true);
 
       const target = event.target as HTMLElement | null;
+      const onToast = target?.closest(".toast-native-cursor") !== null;
+      setIsVisible(!onToast);
+
       const interactive =
-        target?.closest("a,button,[role='button'],input,textarea,select,label,.cursor-clickable") !== null;
+        !onToast && target?.closest("a,button,[role='button'],input,textarea,select,label,.cursor-clickable") !== null;
       setIsInteractive(interactive);
     };
 

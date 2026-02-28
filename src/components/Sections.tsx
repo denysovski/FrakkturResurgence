@@ -3,6 +3,7 @@ import { Globe, Shield, Headphones, ArrowRight, Camera, Facebook, Instagram, Mus
 import LocaleDropdown from "./LocaleDropdown";
 import { Link } from "react-router-dom";
 import RevealOnScroll from "./RevealOnScroll";
+import { resolveImageUrl } from "@/lib/productsApi";
 
 import image1 from "@/assets/image1.jpg";
 import image2 from "@/assets/image2.jpg";
@@ -12,13 +13,6 @@ import image5 from "@/assets/image5.jpg";
 import image6 from "@/assets/image6.jpg";
 import image7 from "@/assets/image7.jpg";
 import image8 from "@/assets/image8.jpg";
-import tee1 from "@/assets/collections/tshirts/tee1.jpg";
-import tee2 from "@/assets/collections/tshirts/tee2.jpg";
-import tee3 from "@/assets/collections/tshirts/tee3.jpg";
-import tee4 from "@/assets/collections/tshirts/tee4.jpg";
-import tee5 from "@/assets/collections/tshirts/tee5.jpg";
-import tee6 from "@/assets/collections/tshirts/tee6.jpg";
-import tee7 from "@/assets/collections/tshirts/tee7.jpg";
 
 const trustBadges = [
   { icon: Globe, title: "Worldwide Delivery", desc: "Fast & tracked shipping to every country" },
@@ -26,27 +20,37 @@ const trustBadges = [
   { icon: Shield, title: "Secured Buying", desc: "Encrypted & safe checkout" },
 ];
 
-const productGrid = [
-  { image: tee1, label: "Newcomers", isMain: true, href: "/collections/tshirts" },
+type ProductGridItem = {
+  imageKey: string;
+  hoverImageKey?: string;
+  label: string | null;
+  isMain?: boolean;
+  comingSoon?: boolean;
+  swatches?: string[];
+  href: string;
+};
+
+const staticProductGrid: ProductGridItem[] = [
+  { imageKey: "tshirts/t1.jpg", hoverImageKey: "tshirts/t5.jpg", label: "Newcomers", isMain: true, href: "/collections/tshirts" },
   {
-    image: tee2,
-    hoverImage: tee5,
+    imageKey: "tshirts/t2.jpg",
+    hoverImageKey: "tshirts/t6.jpg",
     label: null,
     comingSoon: true,
     swatches: ["bg-violet-700", "bg-black"],
     href: "/collections/tshirts",
   },
   {
-    image: tee3,
-    hoverImage: tee6,
+    imageKey: "tshirts/t3.jpg",
+    hoverImageKey: "tshirts/t7.jpg",
     label: null,
     comingSoon: false,
     swatches: ["bg-zinc-800", "bg-neutral-200 border border-border"],
     href: "/collections/tshirts",
   },
   {
-    image: tee4,
-    hoverImage: tee7,
+    imageKey: "tshirts/t4.jpg",
+    hoverImageKey: "tshirts/t8.jpg",
     label: null,
     comingSoon: true,
     swatches: ["bg-indigo-600", "bg-black"],
@@ -103,6 +107,7 @@ export default function Sections({
   onCountryChange,
   onCurrencyChange,
 }: SectionsProps) {
+  const [productGrid] = useState<ProductGridItem[]>(staticProductGrid);
   const [selectedVariants, setSelectedVariants] = useState<Record<number, 0 | 1>>({
     1: 0,
     2: 0,
@@ -117,20 +122,29 @@ export default function Sections({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-[5px]">
         {productGrid.map((item, i) => (
           <Link key={i} to={item.href || "#"} className="group relative h-[240px] sm:h-[360px] md:h-[460px] overflow-hidden block">
+            {(() => {
+              const image = resolveImageUrl(item.imageKey, "tshirts", `newcomers-${i}`);
+              const hoverImage = item.hoverImageKey ? resolveImageUrl(item.hoverImageKey, "tshirts", `newcomers-hover-${i}`) : "";
+
+              return (
+                <>
             <img
-              src={item.hoverImage && selectedVariants[i] === 1 ? item.hoverImage : item.image}
+              src={hoverImage && selectedVariants[i] === 1 ? hoverImage : image}
               alt={item.label || "Product"}
-              className={`w-full h-full object-cover transition-opacity duration-400 ${item.isMain ? "brightness-70" : "brightness-100"} ${item.hoverImage ? "group-hover:opacity-0" : ""}`}
+              className={`w-full h-full object-cover transition-opacity duration-400 ${item.isMain ? "brightness-70" : "brightness-100"} ${hoverImage ? "group-hover:opacity-0" : ""}`}
               loading="lazy"
             />
-            {item.hoverImage && (
+            {hoverImage && (
               <img
-                src={selectedVariants[i] === 1 ? item.image : item.hoverImage}
+                src={selectedVariants[i] === 1 ? image : hoverImage}
                 alt="Alternate product view"
                 className="absolute inset-0 w-full h-full object-cover brightness-100 opacity-0 transition-opacity duration-400 group-hover:opacity-100"
                 loading="lazy"
               />
             )}
+                </>
+              );
+            })()}
             <div className="absolute inset-0 bg-foreground/10 group-hover:bg-foreground/20 transition-colors duration-300" />
 
             {/* Main card: Newcomers overlay */}

@@ -30,6 +30,7 @@ import WishlistPage from "./pages/WishlistPage";
 import OrdersPage from "./pages/OrdersPage";
 import { getStoredUser, isAuthenticated } from "./lib/auth";
 import AdminProductsPage from "./pages/AdminProductsPage";
+import AdminAssetsPage from "./pages/AdminAssetsPage";
 
 const isAdminAuthenticated = () => {
   const user = getStoredUser();
@@ -64,6 +65,10 @@ const App = () => (
           <Route
             path="/admin/products"
             element={isAdminAuthenticated() ? <AdminProductsPage /> : <Navigate to="/auth/login" replace />}
+          />
+          <Route
+            path="/admin/assets"
+            element={isAdminAuthenticated() ? <AdminAssetsPage /> : <Navigate to="/auth/login" replace />}
           />
           
           {/* Auth */}

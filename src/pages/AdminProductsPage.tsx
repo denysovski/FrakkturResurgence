@@ -6,9 +6,9 @@ import {
   deleteAdminProduct,
   fetchAdminOptions,
   fetchAdminProducts,
+  resolveImageUrl,
   saveAdminProduct,
   type AdminProduct,
-  uploadAdminProductImage,
 } from "@/lib/productsApi";
 import type { CategoryKey } from "@/lib/catalog";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,7 @@ const getSizesForCategory = (categoryKey: CategoryKey) => {
 };
 
 type FormState = {
+  dbId?: number;
   id: string;
   categoryKey: CategoryKey;
   name: string;
@@ -45,6 +46,7 @@ type FormState = {
 };
 
 const emptyForm = (): FormState => ({
+  dbId: undefined,
   id: "",
   categoryKey: "tshirts",
   name: "",
@@ -57,6 +59,22 @@ const emptyForm = (): FormState => ({
   sizeStocks: { XS: 0, S: 0, M: 0, L: 0, XL: 0, XXL: 0 },
 });
 
+const toImagePreviewUrl = (imageKey: string, categoryKey: CategoryKey) => {
+  if (!imageKey) {
+    return "";
+  }
+
+  return resolveImageUrl(imageKey, categoryKey, "preview");
+};
+
+const extractImageFileName = (imageKey?: string) => {
+  if (!imageKey) {
+    return "";
+  }
+
+  return imageKey.trim().replace(/[?#].*$/, "").split("/").pop() || "";
+};
+
 const AdminProductsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -67,9 +85,14 @@ const AdminProductsPage = () => {
   const [sustainabilityOptions, setSustainabilityOptions] = useState<string[]>([]);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<"all" | CategoryKey>("all");
 
   const sizeKeys = useMemo(() => getSizesForCategory(form.categoryKey), [form.categoryKey]);
+  const currentImageFileName = useMemo(() => extractImageFileName(form.imageKey), [form.imageKey]);
+  const filteredProducts = useMemo(
+    () => products.filter((item) => selectedCategoryFilter === "all" || item.categoryKey === selectedCategoryFilter),
+    [products, selectedCategoryFilter],
+  );
 
   const refresh = async () => {
     const [productsResponse, optionsResponse] = await Promise.all([fetchAdminProducts(), fetchAdminOptions()]);
@@ -109,6 +132,7 @@ const AdminProductsPage = () => {
 
   const fillFromProduct = (product: AdminProduct) => {
     setForm({
+      dbId: product.dbId,
       id: product.id,
       categoryKey: product.categoryKey,
       name: product.name,
@@ -136,25 +160,31 @@ const AdminProductsPage = () => {
     }));
   };
 
-  const onUploadImage = async (file: File | null) => {
-    if (!file) {
-      return;
-    }
-
-    try {
-      setIsUploading(true);
-      const response = await uploadAdminProductImage(file);
-      setForm((prev) => ({ ...prev, imageKey: response.imageKey }));
-      toast({ title: "Image uploaded", description: "Image key set on product form." });
-    } catch (error) {
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Please try again.",
-      });
-    } finally {
-      setIsUploading(false);
-    }
+  const openImageSelector = () => {
+    const base = import.meta.env.BASE_URL || "/";
+    const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+    const url = `${window.location.origin}${normalizedBase}admin/assets?pick=1&category=${encodeURIComponent(form.categoryKey)}`;
+    window.open(url, "frakktur-asset-picker", "width=1280,height=850");
   };
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      const payload = event.data as { type?: string; imageKey?: string };
+      if (payload?.type !== "frakktur:asset-selected" || !payload.imageKey) {
+        return;
+      }
+
+      setForm((prev) => ({ ...prev, imageKey: payload.imageKey }));
+      toast({ title: "Image selected", description: payload.imageKey });
+    };
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [toast]);
 
   const onSave = async () => {
     if (!form.name.trim()) {
@@ -164,7 +194,9 @@ const AdminProductsPage = () => {
 
     try {
       setIsSaving(true);
+      const isEditing = Boolean(form.dbId);
       await saveAdminProduct({
+        dbId: form.dbId,
         id: form.id || undefined,
         categoryKey: form.categoryKey,
         name: form.name.trim(),
@@ -182,7 +214,10 @@ const AdminProductsPage = () => {
 
       await refresh();
       setForm(emptyForm());
-      toast({ title: "Saved", description: "Product saved successfully." });
+      toast({
+        title: isEditing ? "Edited successfully" : "Saved",
+        description: isEditing ? "Product updated successfully." : "Product saved successfully.",
+      });
     } catch (error) {
       toast({
         title: "Save failed",
@@ -229,6 +264,19 @@ const AdminProductsPage = () => {
         <div className="grid lg:grid-cols-2 gap-8">
           <section className="border border-border p-4 rounded-sm space-y-3">
             <h2 className="text-lg font-medium">Create / Edit Product</h2>
+
+            {form.imageKey ? (
+              <div className="w-[100px] h-[100px] border border-border overflow-hidden bg-secondary rounded-sm">
+                <img
+                  src={toImagePreviewUrl(form.imageKey, form.categoryKey)}
+                  alt="Product preview"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : null}
 
             <input
               value={form.id}
@@ -303,16 +351,22 @@ const AdminProductsPage = () => {
             <input
               value={form.imageKey}
               onChange={(event) => setForm((prev) => ({ ...prev, imageKey: event.target.value }))}
-              placeholder="Image key (uploads/products/...)"
+              placeholder="Image key or filename (example.jpg)"
               className="w-full border border-border px-3 py-2 text-sm bg-background"
             />
 
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => void onUploadImage(event.target.files?.[0] || null)}
-              className="w-full border border-border px-3 py-2 text-sm bg-background"
-            />
+            <div className="flex items-center gap-3 border border-border px-3 py-2 text-sm bg-background">
+              <button
+                type="button"
+                onClick={openImageSelector}
+                className="px-3 py-1 border border-border rounded-sm hover:bg-secondary"
+              >
+                Select images
+              </button>
+              <span className="text-xs text-muted-foreground truncate">
+                {currentImageFileName || "No image selected"}
+              </span>
+            </div>
 
             <div className="grid grid-cols-3 gap-2">
               {sizeKeys.map((size) => (
@@ -351,7 +405,7 @@ const AdminProductsPage = () => {
               <button
                 type="button"
                 onClick={() => void onSave()}
-                disabled={isSaving || isUploading}
+                disabled={isSaving}
                 className="px-4 py-2 bg-foreground text-background text-sm disabled:opacity-60"
               >
                 {isSaving ? "Saving..." : "Save"}
@@ -367,19 +421,51 @@ const AdminProductsPage = () => {
           </section>
 
           <section className="border border-border p-4 rounded-sm">
-            <h2 className="text-lg font-medium mb-3">Products</h2>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h2 className="text-lg font-medium">Products</h2>
+              <select
+                value={selectedCategoryFilter}
+                onChange={(event) => setSelectedCategoryFilter(event.target.value as "all" | CategoryKey)}
+                className="border border-border px-3 py-1.5 text-sm bg-background"
+              >
+                <option value="all">All categories</option>
+                {CATEGORY_OPTIONS.map((option) => (
+                  <option key={option.key} value={option.key}>{option.title}</option>
+                ))}
+              </select>
+            </div>
             <div className="space-y-2 max-h-[72vh] overflow-auto pr-1">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <div key={product.dbId} className="border border-border p-3 rounded-sm">
-                  <p className="text-sm font-medium">{product.id} · {product.name}</p>
-                  <p className="text-xs text-muted-foreground">{product.categoryTitle} · €{(product.priceCents / 100).toFixed(2)}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Stock total: {product.stockTotal}</p>
+                  <div className="flex items-start gap-3">
+                    <div className="w-[100px] h-[100px] border border-border overflow-hidden bg-secondary rounded-sm shrink-0">
+                      {product.imageKey ? (
+                        <img
+                          src={toImagePreviewUrl(product.imageKey, product.categoryKey)}
+                          alt={product.name}
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none";
+                          }}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{product.id} · {product.name}</p>
+                      <p className="text-xs text-muted-foreground">{product.categoryTitle} · €{(product.priceCents / 100).toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Stock total: {product.stockTotal}</p>
+                    </div>
+                  </div>
                   <div className="mt-2 flex gap-2">
                     <button type="button" onClick={() => fillFromProduct(product)} className="text-xs underline">Edit</button>
                     <button type="button" onClick={() => void onDelete(product.id)} className="text-xs underline text-destructive">Delete</button>
                   </div>
                 </div>
               ))}
+
+              {filteredProducts.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No products in this category.</p>
+              ) : null}
             </div>
           </section>
         </div>

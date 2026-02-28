@@ -43,7 +43,8 @@ const CollectionPage = ({
   const [gridCols, setGridCols] = useState(4);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [liveProducts, setLiveProducts] = useState<CollectionProduct[]>(products);
+  const [liveProducts, setLiveProducts] = useState<CollectionProduct[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -69,6 +70,7 @@ const CollectionPage = ({
     let cancelled = false;
 
     const load = async () => {
+      setIsLoadingProducts(true);
       try {
         const dbProducts = await fetchProductsByCategory(categoryKey);
         if (cancelled) {
@@ -76,16 +78,22 @@ const CollectionPage = ({
         }
 
         setLiveProducts(
-          dbProducts.map((product, index) => ({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.image || getCollectionImageByIndex(categoryKey, index),
-          })),
+          dbProducts
+            .filter((product, index, arr) => arr.findIndex((candidate) => candidate.id === product.id) === index)
+            .map((product, index) => ({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              image: product.image || getCollectionImageByIndex(categoryKey, index),
+            })),
         );
       } catch {
         if (!cancelled) {
           setLiveProducts(products);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingProducts(false);
         }
       }
     };
@@ -95,7 +103,7 @@ const CollectionPage = ({
     return () => {
       cancelled = true;
     };
-  }, [categoryKey, products]);
+  }, [categoryKey]);
 
   // Sort products based on selected option
   const sortedProducts = [...liveProducts].sort((a, b) => {
@@ -254,6 +262,9 @@ const CollectionPage = ({
       </div>
 
       {/* Product Grid */}
+      {isLoadingProducts ? (
+        <div className="text-sm text-muted-foreground mb-16">Loading products...</div>
+      ) : (
       <div className={`grid gap-6 md:gap-8 mb-16 ${
         gridCols === 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3"
       }`}>
@@ -272,6 +283,13 @@ const CollectionPage = ({
                 <img
                   src={product.image}
                   alt={`${product.name} - ${title.toLowerCase()} for sale at Frakktur luxury streetwear`}
+                  onError={(event) => {
+                    const fallback = getCollectionImageByIndex(categoryKey, startIndex + idx);
+                    if (!fallback || event.currentTarget.src === fallback) {
+                      return;
+                    }
+                    event.currentTarget.src = fallback;
+                  }}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
@@ -293,6 +311,7 @@ const CollectionPage = ({
           </div>
         ))}
       </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

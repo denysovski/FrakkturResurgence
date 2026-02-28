@@ -9,9 +9,10 @@ import { pushRecentlyViewed, readRecentlyViewed } from "@/lib/recentlyViewed";
 import { addToCart } from "@/lib/cart";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
-import { fetchProductByCategoryAndId } from "@/lib/productsApi";
+import { fetchProductByCategoryAndId, fetchProductsByCategory } from "@/lib/productsApi";
 import { addToWishlist } from "@/lib/wishlist";
 import { getStoredUser, type AuthUser } from "@/lib/auth";
+import { getCollectionImageByIndex } from "@/lib/collectionImages";
 
 const CATEGORY_SIZE_OPTIONS: Record<string, string[]> = {
   tshirts: ["XS", "S", "M", "L", "XL", "XXL"],
@@ -54,6 +55,8 @@ const ProductDetailPage = () => {
   const [isLoadingProduct, setIsLoadingProduct] = useState(true);
   const [selectedSize, setSelectedSize] = useState("UNI");
   const [dbSizes, setDbSizes] = useState<string[]>([]);
+  const [imageError, setImageError] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState<Array<{ id: string; name: string; price: string; image: string; categoryKey: CategoryKey }>>([]);
   const [quantity, setQuantity] = useState(1);
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -72,6 +75,8 @@ const ProductDetailPage = () => {
 
       try {
         const dbProduct = await fetchProductByCategoryAndId(safeCategory, productId);
+        const sameCategory = await fetchProductsByCategory(safeCategory);
+        setImageError(false);
         setProduct({
           id: dbProduct.id,
           name: dbProduct.name,
@@ -82,6 +87,18 @@ const ProductDetailPage = () => {
           material: dbProduct.material,
           sustainability: dbProduct.sustainability,
         });
+        setRelatedProducts(
+          sameCategory
+            .filter((item) => item.id !== dbProduct.id)
+            .slice(0, 8)
+            .map((item) => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              image: item.image,
+              categoryKey: item.categoryKey,
+            })),
+        );
         const sizes = dbProduct.sizes.filter(Boolean);
         setDbSizes(sizes);
         if (safeCategory && UNIVERSAL_SIZE_CATEGORIES.has(safeCategory)) {
@@ -95,6 +112,7 @@ const ProductDetailPage = () => {
       } catch {
         setProduct(null);
         setDbSizes([]);
+        setRelatedProducts([]);
         if (safeCategory && UNIVERSAL_SIZE_CATEGORIES.has(safeCategory)) {
           setSelectedSize("UNI");
         } else {
@@ -107,6 +125,9 @@ const ProductDetailPage = () => {
 
     void loadProductFromDb();
   }, [safeCategory, productId]);
+
+  const fallbackImage = safeCategory ? getCollectionImageByIndex(safeCategory, 0) : "";
+  const productImage = !imageError && product?.image ? product.image : fallbackImage;
 
   useEffect(() => {
     const syncAuth = () => setCurrentUser(getStoredUser());
@@ -136,24 +157,28 @@ const ProductDetailPage = () => {
     });
   }, [product, safeCategory]);
 
-  const similarProducts = useMemo(() => {
-    if (!category || !product || !safeCategory) {
-      return [];
-    }
-
-    return category.products
-      .filter((item) => item.id !== product.id)
-      .slice(0, 4)
-      .map((item) => ({ ...item, categoryKey: safeCategory }));
-  }, [category, product, safeCategory]);
+  const similarProducts = useMemo(() => relatedProducts.slice(0, 4), [relatedProducts]);
 
   const recentOtherProducts = useMemo(() => {
     if (!product || !safeCategory) {
       return recentlyViewed;
     }
 
-    return recentlyViewed.filter((item) => item.key !== `${safeCategory}:${product.id}`);
-  }, [recentlyViewed, product, safeCategory]);
+    const filtered = recentlyViewed.filter((item) => item.key !== `${safeCategory}:${product.id}`);
+    if (filtered.length > 0) {
+      return filtered;
+    }
+
+    return relatedProducts.slice(0, 4).map((item) => ({
+      key: `${item.categoryKey}:${item.id}`,
+      id: item.id,
+      categoryKey: item.categoryKey,
+      categoryTitle: category?.title || "Collection",
+      name: item.name,
+      price: item.price,
+      image: item.image,
+    }));
+  }, [recentlyViewed, product, safeCategory, relatedProducts, category]);
 
   if (isLoadingProduct) {
     return (
@@ -241,7 +266,7 @@ const ProductDetailPage = () => {
         title={product?.name || "Product"}
         description={product?.description ? `${product.description} | ${product.material}` : "High-quality luxury streetwear product"}
         canonicalUrl={`https://frakktur.com/product/${categoryKey}/${productId}`}
-        ogImage={product?.image}
+        ogImage={productImage}
       />
       <div className="min-h-screen bg-background">
         {/* Desktop: Side-by-side layout */}
@@ -249,7 +274,12 @@ const ProductDetailPage = () => {
           {/* Image column - left side */}
           <div className="flex items-start justify-center lg:sticky lg:top-32 h-fit">
             <div className="w-full aspect-square bg-secondary rounded-sm overflow-hidden flex items-center justify-center animate-fade-in-image">
-              <img src={product.image} alt={`${product?.name || "Product"} - Premium luxury streetwear`} className="w-full h-full object-contain p-8" />
+              <img
+                src={productImage}
+                alt={`${product?.name || "Product"} - Premium luxury streetwear`}
+                onError={() => setImageError(true)}
+                className="w-full h-full object-contain p-8"
+              />
             </div>
           </div>
 
@@ -376,7 +406,7 @@ const ProductDetailPage = () => {
           {/* Image column */}
           <div className="flex items-start justify-center md:sticky md:top-32 h-fit">
             <div className="w-full aspect-square bg-secondary rounded-sm overflow-hidden flex items-center justify-center animate-fade-in-image">
-              <img src={product.image} alt={product.name} className="w-full h-full object-contain p-6" />
+              <img src={productImage} alt={product.name} onError={() => setImageError(true)} className="w-full h-full object-contain p-6" />
             </div>
           </div>
 
@@ -501,7 +531,7 @@ const ProductDetailPage = () => {
         {/* Mobile: Stacked layout */}
         <div className="md:hidden px-6 py-12 max-w-md mx-auto">
           <div className="flex items-center justify-center animate-fade-in-image rounded-sm mb-8 overflow-hidden bg-secondary aspect-square">
-            <img src={product.image} alt={product.name} className="w-full h-full object-contain p-6" />
+            <img src={productImage} alt={product.name} onError={() => setImageError(true)} className="w-full h-full object-contain p-6" />
           </div>
           <h1 className="text-2xl font-light tracking-tight mb-2 animate-fade-in-up">{product.name}</h1>
           <p className="text-lg text-muted-foreground mb-6 animate-fade-in-up-1">{product.price}</p>

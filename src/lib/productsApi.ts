@@ -32,21 +32,86 @@ export type AdminProduct = {
   sizeStocks: Record<string, number>;
 };
 
+export type AdminAssetItem = {
+  category: CategoryKey;
+  fileName: string;
+  imageKey: string;
+};
+
+const CATEGORY_PREFIX_TO_KEY: Record<string, CategoryKey> = {
+  t: "tshirts",
+  h: "hoodies",
+  c: "caps",
+  b: "belts",
+  p: "pants",
+  k: "knitwear",
+  j: "leather-jackets",
+};
+
 const getEndpoint = (action: string) => {
   const base = import.meta.env.BASE_URL || "/";
   const normalizedBase = base.endsWith("/") ? base : `${base}/`;
   return `${normalizedBase}auth.php?action=${action}`;
 };
 
-const toImageUrl = (imageKey: string | undefined, categoryKey: CategoryKey, fallbackId: string) => {
+const normalizeImageKey = (imageKey: string) => {
+  const cleaned = imageKey.trim().replace(/^\.?\//, "");
+  if (!cleaned) {
+    return "";
+  }
+
+  const base = import.meta.env.BASE_URL || "/";
+  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+  const baseSegment = normalizedBase.replace(/^\//, "").replace(/\/$/, "");
+
+  const assetsIndex = cleaned.indexOf("assets/");
+  if (assetsIndex >= 0) {
+    return cleaned.slice(assetsIndex);
+  }
+
+  if (baseSegment && cleaned.startsWith(`${baseSegment}/`)) {
+    const withoutBase = cleaned.slice(baseSegment.length + 1);
+    if (withoutBase) {
+      return withoutBase;
+    }
+  }
+
+  if (cleaned.startsWith("assets/")) {
+    return cleaned;
+  }
+
+  if (cleaned.startsWith("uploads/products/")) {
+    return `assets/${cleaned.slice("uploads/products/".length)}`;
+  }
+
+  if (cleaned.startsWith("products/")) {
+    return `assets/${cleaned.slice("products/".length)}`;
+  }
+
+  if (/^[a-z-]+\/[A-Za-z0-9._-]+$/.test(cleaned)) {
+    return `assets/${cleaned}`;
+  }
+
+  if (/^[a-z][0-9]+\.(jpg|jpeg|png|webp|gif)$/i.test(cleaned)) {
+    const category = CATEGORY_PREFIX_TO_KEY[cleaned.charAt(0).toLowerCase()];
+    if (category) {
+      return `${category}/${cleaned}`;
+    }
+  }
+
+  return `assets/${cleaned}`;
+};
+
+export const resolveImageUrl = (imageKey: string | undefined, categoryKey: CategoryKey, fallbackId: string) => {
   if (imageKey && /^https?:\/\//i.test(imageKey)) {
     return imageKey;
   }
 
   if (imageKey && imageKey.trim()) {
+    const normalizedImageKey = normalizeImageKey(imageKey);
     const base = import.meta.env.BASE_URL || "/";
     const normalizedBase = base.endsWith("/") ? base : `${base}/`;
-    return `${normalizedBase}${imageKey.replace(/^\//, "")}`;
+    return `${normalizedBase}${normalizedImageKey}`;
   }
 
   const fromCatalog = getAllProducts().find((product) => product.categoryKey === categoryKey && product.id === fallbackId);
@@ -72,7 +137,7 @@ const request = async <T>(action: string, init?: RequestInit): Promise<T> => {
 
 const mapDbProduct = (product: DbProduct) => ({
   ...product,
-  image: toImageUrl(product.imageKey, product.categoryKey, product.id),
+  image: resolveImageUrl(product.imageKey, product.categoryKey, product.id),
 });
 
 export const fetchProductByCategoryAndId = async (categoryKey: CategoryKey, productId: string) => {
@@ -104,6 +169,7 @@ export const fetchAdminOptions = async () => {
 };
 
 export const saveAdminProduct = async (input: {
+  dbId?: number;
   id?: string;
   categoryKey: CategoryKey;
   name: string;
@@ -130,11 +196,29 @@ export const deleteAdminProduct = async (id: string) => {
   });
 };
 
-export const uploadAdminProductImage = async (file: File) => {
+export const uploadAdminProductImage = async (category: CategoryKey, file: File) => {
+  return uploadAdminAsset(category, file);
+};
+
+export const fetchAdminAssets = async (category: "all" | CategoryKey = "all") => {
+  const query = `admin_assets_list&category=${encodeURIComponent(category)}`;
+  return request<{ items: AdminAssetItem[] }>(query);
+};
+
+export const uploadAdminAsset = async (category: CategoryKey, file: File) => {
   const form = new FormData();
+  form.append("category", category);
   form.append("image", file);
-  return request<{ ok: boolean; imageKey: string }>("admin_upload_image", {
+  return request<{ ok: boolean; imageKey: string }>("admin_asset_upload", {
     method: "POST",
     body: form,
+  });
+};
+
+export const deleteAdminAsset = async (imageKey: string) => {
+  return request<{ ok: boolean; deleted: boolean }>("admin_asset_delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageKey }),
   });
 };

@@ -1,12 +1,13 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageLayout from "@/pages/PageLayout";
-import { catalogCategories } from "@/lib/catalog";
+import { catalogCategories, getAllProducts } from "@/lib/catalog";
 import SEO from "@/components/SEO";
 import { addToWishlist } from "@/lib/wishlist";
 import { getStoredUser, type AuthUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { searchProducts, type DbProduct } from "@/lib/productsApi";
+import { getCollectionImageByIndex } from "@/lib/collectionImages";
 
 const SearchResultsPage = () => {
   const [params] = useSearchParams();
@@ -18,6 +19,10 @@ const SearchResultsPage = () => {
   const { toast } = useToast();
 
   const normalized = initial.trim().toLowerCase();
+
+  useEffect(() => {
+    setQuery(initial);
+  }, [initial]);
 
   const categoryResults = useMemo(
     () => catalogCategories.filter((category) => category.title.toLowerCase().includes(normalized)),
@@ -35,11 +40,57 @@ const SearchResultsPage = () => {
       try {
         const items = await searchProducts(normalized);
         if (!cancelled) {
-          setProductResults(items);
+          if (items.length > 0) {
+            setProductResults(items);
+            return;
+          }
+
+          const fallback = getAllProducts()
+            .filter((product) => {
+              const haystack = `${product.name} ${product.categoryTitle}`.toLowerCase();
+              return haystack.includes(normalized);
+            })
+            .slice(0, 24)
+            .map((product, index) => ({
+              dbId: index + 1,
+              id: product.id,
+              categoryKey: product.categoryKey,
+              categoryTitle: product.categoryTitle,
+              name: product.name,
+              price: product.price,
+              description: product.description,
+              material: product.material,
+              sustainability: product.sustainability,
+              imageKey: product.id,
+              sizes: product.sizes,
+              image: product.image || getCollectionImageByIndex(product.categoryKey, index),
+            }));
+
+          setProductResults(fallback);
         }
       } catch {
         if (!cancelled) {
-          setProductResults([]);
+          const fallback = getAllProducts()
+            .filter((product) => {
+              const haystack = `${product.name} ${product.categoryTitle}`.toLowerCase();
+              return haystack.includes(normalized);
+            })
+            .slice(0, 24)
+            .map((product, index) => ({
+              dbId: index + 1,
+              id: product.id,
+              categoryKey: product.categoryKey,
+              categoryTitle: product.categoryTitle,
+              name: product.name,
+              price: product.price,
+              description: product.description,
+              material: product.material,
+              sustainability: product.sustainability,
+              imageKey: product.id,
+              sizes: product.sizes,
+              image: product.image || getCollectionImageByIndex(product.categoryKey, index),
+            }));
+          setProductResults(fallback);
         }
       }
     };
