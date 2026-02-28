@@ -51,6 +51,7 @@ const CATEGORY_PREFIX_TO_KEY: Record<string, CategoryKey> = {
 const GET_CACHE_TTL_MS = 30_000;
 const responseCache = new Map<string, { expiresAt: number; data: unknown }>();
 const inFlightRequests = new Map<string, Promise<unknown>>();
+const categoryProductsCache = new Map<CategoryKey, ReturnType<typeof mapDbProduct>[]>();
 
 const getEndpoint = (action: string) => {
   const base = import.meta.env.BASE_URL || "/";
@@ -180,13 +181,27 @@ const mapDbProduct = (product: DbProduct) => ({
 });
 
 export const fetchProductByCategoryAndId = async (categoryKey: CategoryKey, productId: string) => {
+  const cachedCategoryProducts = categoryProductsCache.get(categoryKey);
+  if (cachedCategoryProducts) {
+    const cachedProduct = cachedCategoryProducts.find((item) => item.id === productId);
+    if (cachedProduct) {
+      return cachedProduct;
+    }
+  }
+
   const data = await request<{ product: DbProduct }>(`product_get&category=${encodeURIComponent(categoryKey)}&id=${encodeURIComponent(productId)}`);
   return mapDbProduct(data.product);
 };
 
 export const fetchProductsByCategory = async (categoryKey: CategoryKey) => {
   const data = await request<{ products: DbProduct[] }>(`products_by_category&category=${encodeURIComponent(categoryKey)}`);
-  return data.products.map(mapDbProduct);
+  const mapped = data.products.map(mapDbProduct);
+  categoryProductsCache.set(categoryKey, mapped);
+  return mapped;
+};
+
+export const getCachedProductsByCategory = (categoryKey: CategoryKey) => {
+  return categoryProductsCache.get(categoryKey) || [];
 };
 
 export const searchProducts = async (query: string) => {

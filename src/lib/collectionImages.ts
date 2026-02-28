@@ -20,9 +20,22 @@ type ProductLike = {
 type ImageModuleMap = Record<string, { default: string }>;
 
 const normalizeImages = (modules: ImageModuleMap) =>
-  Object.entries(modules)
-    .sort(([pathA], [pathB]) => pathA.localeCompare(pathB))
-    .map(([, module]) => module.default);
+  Array.from(
+    Object.entries(modules)
+      .sort(([pathA], [pathB]) => pathA.localeCompare(pathB))
+      .reduce((map, [path, module]) => {
+        const baseKey = path.replace(/\.(jpg|jpeg|png|webp)$/i, "");
+        const extension = path.split(".").pop()?.toLowerCase();
+        const existing = map.get(baseKey);
+
+        if (!existing || extension === "webp") {
+          map.set(baseKey, { extension, url: module.default });
+        }
+
+        return map;
+      }, new Map<string, { extension?: string; url: string }>())
+      .values(),
+  ).map((item) => item.url);
 
 const collectionImages: Record<CollectionKey, string[]> = {
   tshirts: normalizeImages(

@@ -6,7 +6,7 @@ import SEO from "@/components/SEO";
 import { addToWishlist } from "@/lib/wishlist";
 import { getStoredUser, type AuthUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { fetchProductsByCategory } from "@/lib/productsApi";
+import { fetchProductByCategoryAndId, fetchProductsByCategory } from "@/lib/productsApi";
 import { getCollectionImageByIndex } from "@/lib/collectionImages";
 
 interface CollectionProduct {
@@ -45,6 +45,7 @@ const CollectionPage = ({
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [liveProducts, setLiveProducts] = useState<CollectionProduct[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -282,7 +283,16 @@ const CollectionPage = ({
           >
             <button
               type="button"
-              onClick={() => navigate(`/product/${categoryKey}/${product.id}`)}
+              onClick={() =>
+                navigate(`/product/${categoryKey}/${product.id}`, {
+                  state: {
+                    prefetchedProduct: product,
+                  },
+                })
+              }
+              onMouseEnter={() => {
+                void fetchProductByCategoryAndId(categoryKey, product.id).catch(() => undefined);
+              }}
               className="w-full text-left"
             >
               <div className="aspect-square overflow-hidden bg-secondary mb-4 animate-fade-in-image">
@@ -297,7 +307,10 @@ const CollectionPage = ({
                     }
                     event.currentTarget.src = fallback;
                   }}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onLoad={() => setLoadedImages((prev) => ({ ...prev, [product.id]: true }))}
+                  className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-105 ${
+                    loadedImages[product.id] ? "opacity-100" : "opacity-0"
+                  }`}
                 />
               </div>
               <h3 className="text-sm font-normal mb-2 group-hover:opacity-70 transition-opacity">

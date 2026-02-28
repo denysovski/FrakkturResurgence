@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Heart, Minus, Plus, ShoppingBag } from "lucide-react";
 import PageLayout from "@/pages/PageLayout";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -9,7 +9,7 @@ import { pushRecentlyViewed, readRecentlyViewed } from "@/lib/recentlyViewed";
 import { addToCart } from "@/lib/cart";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
-import { fetchProductByCategoryAndId, fetchProductsByCategory } from "@/lib/productsApi";
+import { fetchProductByCategoryAndId, fetchProductsByCategory, getCachedProductsByCategory } from "@/lib/productsApi";
 import { addToWishlist } from "@/lib/wishlist";
 import { getStoredUser, type AuthUser } from "@/lib/auth";
 import { getCollectionImageByIndex } from "@/lib/collectionImages";
@@ -36,11 +36,13 @@ const defaultSizeOptionsForCategory = (category: CategoryKey | undefined) => {
 
 const ProductDetailPage = () => {
   const { categoryKey, productId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const safeCategory = categoryKey as CategoryKey | undefined;
   const category = safeCategory ? getCategoryData(safeCategory) : null;
+  const navigationPrefetch = (location.state as { prefetchedProduct?: { id: string; name: string; price: string; image: string } } | null)?.prefetchedProduct;
 
   const [product, setProduct] = useState<null | {
     id: string;
@@ -71,6 +73,27 @@ const ProductDetailPage = () => {
       if (!safeCategory || !productId) {
         setIsLoadingProduct(false);
         return;
+      }
+
+      const cachedCategoryProducts = getCachedProductsByCategory(safeCategory);
+      const cachedMatch = cachedCategoryProducts.find((item) => item.id === productId);
+      const fastProduct = cachedMatch || (navigationPrefetch && navigationPrefetch.id === productId
+        ? {
+            id: navigationPrefetch.id,
+            name: navigationPrefetch.name,
+            price: navigationPrefetch.price,
+            image: navigationPrefetch.image,
+            categoryTitle: category?.title || "Collection",
+            description: "",
+            material: "",
+            sustainability: "",
+          }
+        : null);
+
+      if (fastProduct) {
+        setImageError(false);
+        setProduct(fastProduct);
+        setIsLoadingProduct(false);
       }
 
       try {
@@ -126,7 +149,7 @@ const ProductDetailPage = () => {
     };
 
     void loadProductFromDb();
-  }, [safeCategory, productId]);
+  }, [safeCategory, productId, navigationPrefetch, category]);
 
   const fallbackImage = safeCategory ? getCollectionImageByIndex(safeCategory, 0) : "";
   const productImage = !imageError && product?.image ? product.image : fallbackImage;
