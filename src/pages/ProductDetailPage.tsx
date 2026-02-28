@@ -59,6 +59,7 @@ const ProductDetailPage = () => {
   const [dbSizes, setDbSizes] = useState<string[]>([]);
   const [imageError, setImageError] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<Array<{ id: string; name: string; price: string; image: string; categoryKey: CategoryKey }>>([]);
+  const [validatedRecentlyViewed, setValidatedRecentlyViewed] = useState<ReturnType<typeof readRecentlyViewed>>([]);
   const [quantity, setQuantity] = useState(1);
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -182,14 +183,49 @@ const ProductDetailPage = () => {
     });
   }, [product, safeCategory]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const validateRecentlyViewed = async () => {
+      const checked = await Promise.all(
+        recentlyViewed.map(async (item) => {
+          try {
+            const dbProduct = await fetchProductByCategoryAndId(item.categoryKey, item.id);
+            return {
+              key: `${dbProduct.categoryKey}:${dbProduct.id}`,
+              id: dbProduct.id,
+              categoryKey: dbProduct.categoryKey,
+              categoryTitle: dbProduct.categoryTitle,
+              name: dbProduct.name,
+              price: dbProduct.price,
+              image: dbProduct.image,
+            };
+          } catch {
+            return null;
+          }
+        }),
+      );
+
+      if (!cancelled) {
+        setValidatedRecentlyViewed(checked.filter((item): item is NonNullable<typeof item> => item !== null));
+      }
+    };
+
+    void validateRecentlyViewed();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [recentlyViewed]);
+
   const similarProducts = useMemo(() => relatedProducts.slice(0, 4), [relatedProducts]);
 
   const recentOtherProducts = useMemo(() => {
     if (!product || !safeCategory) {
-      return recentlyViewed;
+      return validatedRecentlyViewed;
     }
 
-    const filtered = recentlyViewed.filter((item) => item.key !== `${safeCategory}:${product.id}`);
+    const filtered = validatedRecentlyViewed.filter((item) => item.key !== `${safeCategory}:${product.id}`);
     if (filtered.length > 0) {
       return filtered;
     }
@@ -203,7 +239,7 @@ const ProductDetailPage = () => {
       price: item.price,
       image: item.image,
     }));
-  }, [recentlyViewed, product, safeCategory, relatedProducts, category]);
+  }, [validatedRecentlyViewed, product, safeCategory, relatedProducts, category]);
 
   if (isLoadingProduct) {
     return (
