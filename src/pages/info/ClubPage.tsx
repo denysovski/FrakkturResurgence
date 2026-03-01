@@ -1,7 +1,27 @@
 import PageLayout from "@/pages/PageLayout";
 import SEO from "@/components/SEO";
+import { useNavigate } from "react-router-dom";
+import { getStoredUser } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 const ClubPage = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleCreateClubAccount = () => {
+    const user = getStoredUser();
+
+    if (!user) {
+      navigate("/auth/login");
+      return;
+    }
+
+    toast({
+      title: "Frakktur Club",
+      description: "You are already part of Frakktur club",
+    });
+  };
+
   return (
     <PageLayout forceBlackNavbar={true}>
       <SEO
@@ -68,12 +88,13 @@ const ClubPage = () => {
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
               It's free to join. Sign up today and get instant access to exclusive benefits.
             </p>
-            <a
-              href="/auth/login"
+            <button
+              type="button"
+              onClick={handleCreateClubAccount}
               className="inline-block bg-foreground text-background px-8 py-3 text-sm font-normal hover:bg-foreground/90 transition-colors rounded-sm"
             >
               Create Club Account
-            </a>
+            </button>
           </div>
         </div>
       </div>
