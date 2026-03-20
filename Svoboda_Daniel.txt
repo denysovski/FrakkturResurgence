@@ -1,0 +1,3 @@
+Webový e-shop módní značky
+
+Moderní webová stránka Frakktur – mezinárodní e-shop s oblečením vytvořený pomocí knihoven React, TypeScript, Vite a Tailwind CSS. Projekt je koncipovaný jako e-commerce business odpovídající současným trendům. Plynulé uživatelské rozhraní, přechody, efekty při načtení stránky. Součástí projektu je backendová část, která zajišťuje komunikaci s databází prostřednictvím REST API. Aplikace obsahuje veřejnou část pro zákazníky, která umožňuje prohlížení produktů, zobrazení detailů produktů, práci s košíkem a wishlistem. Administrátorské rozhraní dále slouží k správě produktů a úpravě jejich detailů či náhledových obrázků ve formátech, které jsou nahrávany do kořenového adresáře na hostingu Endora.
