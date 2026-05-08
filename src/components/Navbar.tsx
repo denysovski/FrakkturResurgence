@@ -8,8 +8,32 @@ import { getStoredUser, logoutUser, type AuthUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { getAllProducts, type CategoryKey } from "@/lib/catalog";
 import { fetchProductsByCategory } from "@/lib/productsApi";
+import { useI18n, LANGUAGE_OPTIONS } from "@/lib/i18nContext";
+import { useCurrency, CURRENCY_OPTIONS } from "@/lib/currencyContext";
+import type { Language } from "@/lib/i18n";
 
 import logoInvert from "@/assets/frakktur-icon-invert.png";
+
+// Map country values to language codes
+const countryToLanguageMap: Record<string, Language> = {
+  "GREAT BRITAIN": "en",
+  "UNITED STATES": "en",
+  "CZECHIA": "cs",
+  "SLOVAKIA": "sk",
+  "GERMANY": "de",
+  "JAPAN": "ja",
+  "CHINA": "zh",
+};
+
+// Map language codes to language options
+const languageToCountryMap: Record<Language, string> = {
+  en: "GREAT BRITAIN",
+  cs: "CZECHIA",
+  sk: "SLOVAKIA",
+  de: "GERMANY",
+  ja: "JAPAN",
+  zh: "CHINA",
+};
 
 const primaryMenuLinks = [
   { label: "T-shirts", href: "/collections/tshirts" },
@@ -57,6 +81,8 @@ export default function Navbar({
   onCurrencyChange,
   forceBlackText = false,
 }: NavbarProps) {
+  const { language, setLanguage } = useI18n();
+  const { currency, setCurrency } = useCurrency();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
@@ -274,8 +300,14 @@ export default function Navbar({
               <LocaleDropdown
                 type="country"
                 options={countryOptions}
-                selected={selectedCountry}
-                onChange={onCountryChange}
+                selected={languageToCountryMap[language]}
+                onChange={(country) => {
+                  const lang = countryToLanguageMap[country];
+                  if (lang) {
+                    setLanguage(lang);
+                  }
+                  onCountryChange(country);
+                }}
                 onOpenChange={setDropdownOpen}
               />
             </div>
@@ -284,8 +316,11 @@ export default function Navbar({
               <LocaleDropdown
                 type="currency"
                 options={currencyOptions}
-                selected={selectedCurrency}
-                onChange={onCurrencyChange}
+                selected={currency}
+                onChange={(curr) => {
+                  setCurrency(curr as any);
+                  onCurrencyChange(curr);
+                }}
                 onOpenChange={setDropdownOpen}
               />
             </div>
@@ -304,10 +339,10 @@ export default function Navbar({
                   <button
                     type="button"
                     onClick={() => setUserMenuOpen((prev) => !prev)}
-                    className="p-1 transition-transform duration-200 hover:scale-110"
+                    className="flex h-[30px] w-[30px] items-center justify-center rounded-full border border-current transition-transform duration-200 hover:scale-110"
                     aria-label="Account menu"
                   >
-                    <User className="w-5 h-5" />
+                    <User className="w-4 h-4" />
                   </button>
 
                   {userMenuOpen && (
@@ -370,8 +405,8 @@ export default function Navbar({
                   )}
                 </>
               ) : (
-                <Link to="/auth/login" className="block p-1 transition-transform duration-200 hover:scale-110" aria-label="Login">
-                  <User className="w-5 h-5" />
+                <Link to="/auth/login" className="flex h-[30px] w-[30px] items-center justify-center rounded-full border border-current transition-transform duration-200 hover:scale-110" aria-label="Login">
+                  <User className="w-4 h-4" />
                 </Link>
               )}
             </div>

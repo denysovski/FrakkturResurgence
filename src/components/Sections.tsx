@@ -131,7 +131,7 @@ export default function Sections({
             <img
               src={hoverImage && selectedVariants[i] === 1 ? hoverImage : image}
               alt={item.label || "Product"}
-              className={`w-full h-full object-cover transition-opacity duration-400 ${item.isMain ? "brightness-70" : "brightness-100"} ${hoverImage ? "group-hover:opacity-0" : ""}`}
+              className={`w-full h-full object-cover transition-opacity duration-400 brightness-100 ${hoverImage ? "group-hover:opacity-0" : ""}`}
               loading="lazy"
             />
             {hoverImage && (
@@ -145,19 +145,33 @@ export default function Sections({
                 </>
               );
             })()}
-            <div className="absolute inset-0 bg-foreground/10 group-hover:bg-foreground/20 transition-colors duration-300" />
+            <div
+              className={`absolute inset-0 transition-colors duration-300 ${
+                item.isMain ? "bg-transparent group-hover:bg-foreground/10" : "bg-transparent group-hover:bg-foreground/10"
+              }`}
+            />
 
             {/* Main card: Newcomers overlay */}
             {item.isMain && (
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <h3 className="text-2xl md:text-3xl font-bold tracking-normal normal-case text-primary-foreground mb-4">
-                  Newcomers
-                </h3>
-                <span className="inline-flex items-center gap-2 text-sm uppercase tracking-[0.12em] underline underline-offset-4 hover:opacity-70 transition-opacity text-primary-foreground">
-                  See all
-                  <ArrowRight className="w-4 h-4" />
-                </span>
+                <div className="bg-black px-5 py-4 text-center text-primary-foreground">
+                  <h3 className="text-2xl md:text-3xl font-bold tracking-normal normal-case text-primary-foreground mb-4">
+                    Newcomers
+                  </h3>
+                  <span className="inline-flex items-center gap-2 text-sm uppercase tracking-[0.12em] underline underline-offset-4 hover:opacity-70 transition-opacity text-primary-foreground">
+                    See all
+                  </span>
+                </div>
               </div>
+            )}
+
+            {!item.isMain && (
+              <span
+                aria-hidden="true"
+                className="absolute bottom-3 left-3 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-background opacity-90 transition-transform duration-200 hover:scale-105 hover:opacity-100"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </span>
             )}
 
             {/* Coming soon badge */}
@@ -263,7 +277,7 @@ export default function Sections({
             Register, earn points & rewards on all purchases. Redeem exclusive offers and discounts.
           </p>
           <a
-            href="/club"
+            href="club"
             className="inline-flex items-center gap-2 mt-6 text-sm uppercase tracking-[0.12em] underline underline-offset-4 hover:opacity-70 transition-opacity"
           >
             Sign up

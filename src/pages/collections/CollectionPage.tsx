@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Filter, Sparkles, TrendingUp, Star, DollarSign, ChevronDown, Grid2x2, Grid3x3, Type } from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, Sparkles, TrendingUp, Star, DollarSign, ChevronDown, Grid2x2, Grid3x3, Type, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { CategoryKey } from "@/lib/catalog";
 import SEO from "@/components/SEO";
@@ -14,6 +14,7 @@ interface CollectionProduct {
   name: string;
   price: string;
   image: string;
+  sizes: string[];
 }
 
 interface CollectionPageProps {
@@ -86,6 +87,7 @@ const CollectionPage = ({
               name: product.name,
               price: product.price,
               image: product.image || getCollectionImageByIndex(categoryKey, index),
+              sizes: product.sizes?.filter(Boolean) || [],
             })),
         );
       } catch {
@@ -201,7 +203,7 @@ const CollectionPage = ({
           </div>
         </div>
 
-        <div className="relative z-[120] animate-fade-in-up-2">
+        <div className="relative z-[140] animate-fade-in-up-2">
           <button
             onClick={() => setSortMenuOpen(!sortMenuOpen)}
             className="flex items-center gap-2 px-4 py-2 border border-border hover:bg-secondary transition-colors rounded-sm text-sm"
@@ -212,7 +214,7 @@ const CollectionPage = ({
           </button>
 
           {sortMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-border shadow-sm z-[200] rounded-sm overflow-hidden">
+            <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-border shadow-lg z-[220] rounded-sm overflow-hidden">
               <button
                 onClick={() => {
                   setSortBy("newest");
@@ -272,7 +274,7 @@ const CollectionPage = ({
       {isLoadingProducts ? (
         <div className="text-sm text-muted-foreground mb-16">Loading products...</div>
       ) : (
-      <div className={`grid gap-6 md:gap-8 mb-16 ${
+      <div className={`relative z-0 grid gap-6 md:gap-8 mb-16 ${
         gridCols === 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3"
       }`}>
         {visibleProducts.map((product, idx) => (
@@ -313,10 +315,40 @@ const CollectionPage = ({
                   }`}
                 />
               </div>
-              <h3 className="text-sm font-normal mb-2 group-hover:opacity-70 transition-opacity">
-                {product.name}
-              </h3>
-              <p className="text-sm text-muted-foreground">{product.price}</p>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <h3 className="text-sm font-normal group-hover:opacity-70 transition-opacity flex-1">
+                  {product.name}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(`/product/${categoryKey}/${product.id}`, {
+                      state: {
+                        prefetchedProduct: product,
+                      },
+                    })
+                  }
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-background transition-transform duration-200 hover:scale-105 hover:opacity-90 flex-shrink-0"
+                  aria-label={`Go shopping ${product.name}`}
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">{product.price}</p>
+
+              {product.sizes.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {product.sizes.map((size) => (
+                    <span
+                      key={size}
+                      className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-foreground px-2 text-[10px] font-medium uppercase tracking-[0.15em] text-background"
+                    >
+                      {size}
+                    </span>
+                  ))}
+                </div>
+              )}
+
             </button>
 
             {currentUser && (

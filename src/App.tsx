@@ -6,6 +6,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { I18nProvider } from "@/lib/i18nContext";
 import { CurrencyProvider } from "@/lib/currencyContext";
 import { AppInitializer } from "@/components/AppInitializer";
+import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +26,10 @@ import LoginPage from "./pages/auth/LoginPage";
 import ClubPage from "./pages/info/ClubPage";
 import AboutPage from "./pages/info/AboutPage";
 import SustainabilityPage from "./pages/info/SustainabilityPage";
+import TermsOfServicePage from "./pages/info/TermsOfServicePage";
+import ShippingPolicyPage from "./pages/info/ShippingPolicyPage";
+import RefundPolicyPage from "./pages/info/RefundPolicyPage";
+import PrivacyPolicyPage from "./pages/info/PrivacyPolicyPage";
 import CustomCursor from "./components/CustomCursor";
 import SearchResultsPage from "./pages/SearchResultsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
@@ -46,40 +51,42 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter basename={import.meta.env.BASE_URL}>
+              <ScrollToTop />
               <Routes>
-          <Route path="/" element={<Index />} />
-          
-          {/* Collections */}
-          <Route path="/collections/tshirts" element={<TshirtsPage />} />
-          <Route path="/collections/hoodies" element={<HoodiesPage />} />
-          <Route path="/collections/caps" element={<CapsPage />} />
-          <Route path="/collections/belts" element={<BeltsPage />} />
-          <Route path="/collections/pants" element={<PantsPage />} />
-          <Route path="/collections/knitwear" element={<KnitwearPage />} />
-          <Route path="/collections/leather-jackets" element={<LeatherJacketsPage />} />
-          <Route path="/search" element={<SearchResultsPage />} />
-          <Route path="/product/:categoryKey/:productId" element={<ProductDetailPage />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/wishlist" element={<WishlistPage />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/admin/products" element={<AdminProductsPage />} />
-          <Route path="/admin/assets" element={<AdminAssetsPage />} />
-          
-          {/* Auth */}
-          <Route path="/auth/login" element={<LoginPage />} />
-          
-          {/* Info Pages */}
-          <Route path="/club" element={<ClubPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/sustainability" element={<SustainabilityPage />} />
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+                <Route path="/" element={<Index />} />
+
+                {/* Collections */}
+                <Route path="/collections/tshirts" element={<TshirtsPage />} />
+                <Route path="/collections/hoodies" element={<HoodiesPage />} />
+                <Route path="/collections/caps" element={<CapsPage />} />
+                <Route path="/collections/belts" element={<BeltsPage />} />
+                <Route path="/collections/pants" element={<PantsPage />} />
+                <Route path="/collections/knitwear" element={<KnitwearPage />} />
+                <Route path="/collections/leather-jackets" element={<LeatherJacketsPage />} />
+                <Route path="/search" element={<SearchResultsPage />} />
+                <Route path="/product/:categoryKey/:productId" element={<ProductDetailPage />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/wishlist" element={<WishlistPage />} />
+                <Route path="/orders" element={<OrdersPage />} />
+                <Route path="/admin/products" element={<AdminProductsPage />} />
+                <Route path="/admin/assets" element={<AdminAssetsPage />} />
+
+                {/* Auth */}
+                <Route path="/auth/login" element={<LoginPage />} />
+
+                {/* Info Pages */}
+                <Route path="/club" element={<ClubPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/sustainability" element={<SustainabilityPage />} />
+                <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+                <Route path="/shipping-policy" element={<ShippingPolicyPage />} />
+                <Route path="/refund-policy" element={<RefundPolicyPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-            <Sonner />
-            <Toaster />
-            <CustomCursor />
           </AppInitializer>
         </TooltipProvider>
       </CurrencyProvider>
