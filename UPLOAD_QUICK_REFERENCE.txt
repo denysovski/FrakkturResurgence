@@ -1,0 +1,135 @@
+╔════════════════════════════════════════════════════════════════════╗
+║         FRAKKTUR ENDORA - QUICK UPLOAD REFERENCE CARD              ║
+║                       Build: May 2026                               ║
+╚════════════════════════════════════════════════════════════════════╝
+
+📋 WHAT TO UPLOAD (from dist/ folder)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PRIORITY 1 - CRITICAL
+┌─────────────────────────────────────────────────────────────────┐
+│ → index.html                                  → /public_html/
+└─────────────────────────────────────────────────────────────────┘
+
+PRIORITY 2 - JAVASCRIPT
+┌─────────────────────────────────────────────────────────────────┐
+│ → assets/index-B4Ew6KXW.js                   → /public_html/assets/
+│ → assets/vendor-react-erz9qOrx.js            → /public_html/assets/
+│ → assets/vendor-ui-6RLSfnSX.js               → /public_html/assets/
+└─────────────────────────────────────────────────────────────────┘
+
+PRIORITY 3 - STYLESHEET
+┌─────────────────────────────────────────────────────────────────┐
+│ → assets/index-D2p5FaiX.css                  → /public_html/assets/
+└─────────────────────────────────────────────────────────────────┘
+
+PRIORITY 4 - ALL IMAGES & ASSETS
+┌─────────────────────────────────────────────────────────────────┐
+│ → assets/*  (entire folder)                  → /public_html/assets/
+│   (46 image files: webp, jpg, png)
+└─────────────────────────────────────────────────────────────────┘
+
+PRIORITY 5 - ROUTING
+┌─────────────────────────────────────────────────────────────────┐
+│ → .htaccess                                  → /public_html/
+└─────────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🗑️ FILES TO DELETE (OLD)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   ✗ index.js           (old file)
+   ✗ index.css          (old file)
+   ✗ vendor-react.js    (old file)
+   ✗ vendor-ui.js       (old file)
+
+Delete these BEFORE uploading new files!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ VERIFICATION (After Upload)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Homepage loads:           https://your-domain.cz
+Styles visible:           (not white/unstyled)
+Language dropdown:        6 languages visible (EN, CS, SK, DE, JA, ZH)
+Currency dropdown:        5 currencies visible (EUR, CZK, USD, JPY, CNY)
+Add to cart:              Works without errors
+Checkout:                 Form appears
+Login:                    Works & persists on refresh
+Console (F12):            No JavaScript errors
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 FILE SIZES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+index.html                   2.38 KB  ✓
+index-B4Ew6KXW.js           352 KB   ✓ (Main app)
+vendor-react-erz9qOrx.js    162 KB   ✓ (React lib)
+vendor-ui-6RLSfnSX.js        14 KB   ✓ (UI lib)
+index-D2p5FaiX.css           76 KB   ✓ (Styles)
+images & assets            2.8 MB    ✓ (46 files)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TOTAL                      ~3.4 MB
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🆕 NEW FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Internationalization (6 languages)
+✅ Multi-Currency Support (5 currencies)
+✅ Session Management Fix
+✅ Scrollbar Twitching Fixed
+✅ Club Sign-up Button Routing
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚙️ BACKEND (ALREADY INSTALLED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ /public/auth.php         (Keep local, don't replace)
+✓ /public/lib/db.php       (Connection settings)
+✓ .env                      (DB credentials)
+✓ Database tables:          orders, order_items
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 QUICK UPLOAD (SFTP COMMAND)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+sftp user@host.endora.cz
+cd /public_html
+put -r dist/* .
+put .htaccess .
+bye
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ IF ISSUES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+White page?
+  → Clear cache (Ctrl+F5)
+  → Check all assets/ files uploaded
+
+Unstyled page?
+  → Verify index-D2p5FaiX.css exists
+  → Check browser console for 404 errors
+
+Checkout failing?
+  → Verify /public/auth.php exists
+  → Check .env DB credentials
+
+Routes not working (404)?
+  → Verify .htaccess in /public_html/
+  → Check mod_rewrite enabled (Apache)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 Full docs:  DEPLOYMENT.md & ENDORA_UPLOAD_CHECKLIST.md
+📌 Last update: May 2026
+🎯 Status:     ✅ Ready for Production
+
