@@ -51,6 +51,12 @@ function is_debug_enabled()
 
 function table_has_column($pdo, $table, $column)
 {
+    static $cache = array();
+    $key = $table . '::' . $column;
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+
         $sql = 'SELECT 1
                         FROM information_schema.COLUMNS
                         WHERE TABLE_SCHEMA = DATABASE()
@@ -59,7 +65,8 @@ function table_has_column($pdo, $table, $column)
                         LIMIT 1';
     $stmt = $pdo->prepare($sql);
         $stmt->execute(array($table, $column));
-    return (bool) $stmt->fetch();
+    $cache[$key] = (bool) $stmt->fetch();
+    return $cache[$key];
 }
 
 function require_auth_user_id()
@@ -115,7 +122,7 @@ function ensure_size_rows_for_product($pdo, $productId, $categoryKey)
     );
 
     foreach ($expected as $sizeCode) {
-        $stmtInsert->execute(array($productId, $sizeCode, rand(0, 100)));
+        $stmtInsert->execute(array($productId, $sizeCode, 0));
     }
 }
 
@@ -150,6 +157,160 @@ function ensure_user_item_tables($pdo)
             CONSTRAINT fk_wishlist_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             CONSTRAINT fk_wishlist_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+    );
+}
+
+function ensure_order_tables($pdo)
+{
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS orders (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            order_number CHAR(8) NOT NULL,
+            user_id BIGINT UNSIGNED DEFAULT NULL,
+            guest_label VARCHAR(80) NOT NULL DEFAULT '',
+            email VARCHAR(255) NOT NULL,
+            first_name VARCHAR(120) NOT NULL,
+            last_name VARCHAR(120) NOT NULL,
+            street VARCHAR(255) NOT NULL,
+            city VARCHAR(120) NOT NULL,
+            country VARCHAR(120) NOT NULL,
+            postal_code VARCHAR(32) NOT NULL,
+            payment_method VARCHAR(32) NOT NULL,
+            currency CHAR(3) NOT NULL DEFAULT 'EUR',
+            subtotal_cents INT UNSIGNED NOT NULL DEFAULT 0,
+            shipping_cents INT UNSIGNED NOT NULL DEFAULT 1199,
+            total_cents INT UNSIGNED NOT NULL DEFAULT 0,
+            status VARCHAR(24) NOT NULL DEFAULT 'received',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_orders_number (order_number),
+            KEY idx_orders_user (user_id),
+            KEY idx_orders_created_at (created_at),
+            CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+    );
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS order_items (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            order_id BIGINT UNSIGNED NOT NULL,
+            product_id BIGINT UNSIGNED DEFAULT NULL,
+            product_code VARCHAR(40) NOT NULL,
+            category_key VARCHAR(64) NOT NULL,
+            category_title VARCHAR(120) NOT NULL,
+            product_name VARCHAR(180) NOT NULL,
+            image_key VARCHAR(255) DEFAULT NULL,
+            size_code VARCHAR(16) NOT NULL,
+            unit_price_cents INT UNSIGNED NOT NULL DEFAULT 0,
+            quantity INT UNSIGNED NOT NULL DEFAULT 1,
+            line_total_cents INT UNSIGNED NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_order_items_order (order_id),
+            KEY idx_order_items_product (product_id),
+            CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+            CONSTRAINT fk_order_items_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+    );
+}
+
+function generate_unique_order_number($pdo)
+{
+    $stmt = $pdo->prepare('SELECT id FROM orders WHERE order_number = ? LIMIT 1');
+
+    for ($attempt = 0; $attempt < 50; $attempt++) {
+        $candidate = (string) random_int(10000000, 99999999);
+        $stmt->execute(array($candidate));
+        if (!$stmt->fetch()) {
+            return $candidate;
+        }
+    }
+
+    throw new Exception('Could not generate a unique order number.');
+}
+
+function normalize_payment_method($paymentMethod)
+{
+    $value = strtolower(trim((string) $paymentMethod));
+    $allowed = array('bank_transfer', 'credit_card', 'cash_on_delivery');
+
+    return in_array($value, $allowed, true) ? $value : null;
+}
+
+function load_order_item_snapshot($pdo, $productId, $sizeCode, $quantity)
+{
+    $stmt = $pdo->prepare(
+        'SELECT p.id, p.product_code, p.name, p.price_cents, p.image_key,
+                c.slug AS category_key, c.title AS category_title
+         FROM products p
+         INNER JOIN categories c ON c.id = p.category_id
+         WHERE p.id = ?
+         LIMIT 1'
+    );
+    $stmt->execute(array($productId));
+    $row = $stmt->fetch();
+
+    if (!$row) {
+        error_response('Product not found.', 404);
+    }
+
+    $unitPriceCents = (int) $row['price_cents'];
+    $quantity = max(1, (int) $quantity);
+
+    return array(
+        'productId' => (int) $row['id'],
+        'key' => (string) $row['category_key'] . ':' . (string) $row['product_code'] . ':' . (string) $sizeCode,
+        'id' => (string) $row['product_code'],
+        'categoryKey' => (string) $row['category_key'],
+        'categoryTitle' => (string) $row['category_title'],
+        'name' => (string) $row['name'],
+        'imageKey' => (string) (isset($row['image_key']) ? $row['image_key'] : ''),
+        'size' => (string) $sizeCode,
+        'quantity' => $quantity,
+        'unitPriceCents' => $unitPriceCents,
+        'lineTotalCents' => $unitPriceCents * $quantity,
+    );
+}
+
+function build_order_response($orderRow, $items)
+{
+    $responseItems = array();
+    foreach ($items as $item) {
+        $responseItems[] = array(
+            'key' => $item['key'],
+            'id' => $item['id'],
+            'categoryKey' => $item['categoryKey'],
+            'categoryTitle' => $item['categoryTitle'],
+            'name' => $item['name'],
+            'imageKey' => $item['imageKey'],
+            'size' => $item['size'],
+            'quantity' => (int) $item['quantity'],
+            'unitPriceCents' => (int) $item['unitPriceCents'],
+            'lineTotalCents' => (int) $item['lineTotalCents'],
+        );
+    }
+
+    return array(
+        'id' => (string) $orderRow['order_number'],
+        'orderNumber' => (string) $orderRow['order_number'],
+        'createdAt' => (string) $orderRow['created_at'],
+        'status' => (string) $orderRow['status'],
+        'paymentMethod' => (string) $orderRow['payment_method'],
+        'currency' => (string) $orderRow['currency'],
+        'subtotalCents' => (int) $orderRow['subtotal_cents'],
+        'shippingCents' => (int) $orderRow['shipping_cents'],
+        'totalCents' => (int) $orderRow['total_cents'],
+        'address' => array(
+            'email' => (string) $orderRow['email'],
+            'firstName' => (string) $orderRow['first_name'],
+            'lastName' => (string) $orderRow['last_name'],
+            'street' => (string) $orderRow['street'],
+            'city' => (string) $orderRow['city'],
+            'postalCode' => (string) $orderRow['postal_code'],
+            'country' => (string) $orderRow['country'],
+        ),
+        'items' => $responseItems,
     );
 }
 
@@ -539,17 +700,10 @@ try {
             error_response('Category is required.', 400);
         }
 
-        $stmtIds = $pdo->prepare('SELECT p.id FROM products p INNER JOIN categories c ON c.id = p.category_id WHERE c.slug = ?');
-        $stmtIds->execute(array($categoryKey));
-        $ids = $stmtIds->fetchAll();
-        foreach ($ids as $idRow) {
-            ensure_size_rows_for_product($pdo, (int) $idRow['id'], $categoryKey);
-        }
-
         $stmt = $pdo->prepare(
             "SELECT p.id, p.product_code, p.name, p.description, p.material, p.sustainability, p.price_cents, p.image_key,
                     c.slug AS category_slug, c.title AS category_title,
-                    GROUP_CONCAT(CASE WHEN ps.stock > 0 THEN ps.size_code END ORDER BY FIELD(ps.size_code,'XS','S','M','L','XL','XXL','UNI')) AS sizes_csv
+                    GROUP_CONCAT(DISTINCT ps.size_code ORDER BY FIELD(ps.size_code,'XS','S','M','L','XL','XXL','UNI')) AS sizes_csv
              FROM products p
              INNER JOIN categories c ON c.id = p.category_id
              LEFT JOIN product_sizes ps ON ps.product_id = p.id
@@ -578,7 +732,7 @@ try {
         $stmt = $pdo->prepare(
             "SELECT p.id, p.product_code, p.name, p.description, p.material, p.sustainability, p.price_cents, p.image_key,
                     c.slug AS category_slug, c.title AS category_title,
-                    GROUP_CONCAT(CASE WHEN ps.stock > 0 THEN ps.size_code END ORDER BY FIELD(ps.size_code,'XS','S','M','L','XL','XXL','UNI')) AS sizes_csv
+                    GROUP_CONCAT(DISTINCT ps.size_code ORDER BY FIELD(ps.size_code,'XS','S','M','L','XL','XXL','UNI')) AS sizes_csv
              FROM products p
              INNER JOIN categories c ON c.id = p.category_id
              LEFT JOIN product_sizes ps ON ps.product_id = p.id
@@ -593,23 +747,7 @@ try {
             error_response('Product not found.', 404);
         }
 
-        ensure_size_rows_for_product($pdo, (int) $row['id'], $categoryKey);
-
-        $stmtReload = $pdo->prepare(
-            "SELECT p.id, p.product_code, p.name, p.description, p.material, p.sustainability, p.price_cents, p.image_key,
-                    c.slug AS category_slug, c.title AS category_title,
-                    GROUP_CONCAT(CASE WHEN ps.stock > 0 THEN ps.size_code END ORDER BY FIELD(ps.size_code,'XS','S','M','L','XL','XXL','UNI')) AS sizes_csv
-             FROM products p
-             INNER JOIN categories c ON c.id = p.category_id
-             LEFT JOIN product_sizes ps ON ps.product_id = p.id
-             WHERE p.id = ?
-             GROUP BY p.id, c.slug, c.title
-             LIMIT 1"
-        );
-        $stmtReload->execute(array((int) $row['id']));
-        $freshRow = $stmtReload->fetch();
-
-        json_response(array('product' => map_product_row_for_frontend($freshRow ? $freshRow : $row)), 200);
+        json_response(array('product' => map_product_row_for_frontend($row)), 200);
     }
 
     if ($action === 'search' && $method === 'GET') {
@@ -622,7 +760,7 @@ try {
         $stmt = $pdo->prepare(
             "SELECT p.id, p.product_code, p.name, p.description, p.material, p.sustainability, p.price_cents, p.image_key,
                     c.slug AS category_slug, c.title AS category_title,
-                    GROUP_CONCAT(CASE WHEN ps.stock > 0 THEN ps.size_code END ORDER BY FIELD(ps.size_code,'XS','S','M','L','XL','XXL','UNI')) AS sizes_csv
+                    GROUP_CONCAT(DISTINCT ps.size_code ORDER BY FIELD(ps.size_code,'XS','S','M','L','XL','XXL','UNI')) AS sizes_csv
              FROM products p
              INNER JOIN categories c ON c.id = p.category_id
              LEFT JOIN product_sizes ps ON ps.product_id = p.id
@@ -981,7 +1119,7 @@ try {
         $userId = require_auth_user_id();
 
         $stmt = $pdo->prepare(
-            'SELECT c.slug AS category_key, p.product_code, ci.size_code, ci.quantity
+            'SELECT c.slug AS category_key, c.title AS category_title, p.product_code, p.name, p.price_cents, p.image_key, ci.size_code, ci.quantity
              FROM cart_items ci
              INNER JOIN products p ON p.id = ci.product_id
              INNER JOIN categories c ON c.id = p.category_id
@@ -1000,6 +1138,10 @@ try {
                 'key' => $categoryKey . ':' . $productCode . ':' . $sizeCode,
                 'id' => $productCode,
                 'categoryKey' => $categoryKey,
+                'categoryTitle' => (string) $row['category_title'],
+                'name' => (string) $row['name'],
+                'priceCents' => (int) $row['price_cents'],
+                'imageKey' => (string) (isset($row['image_key']) ? $row['image_key'] : ''),
                 'size' => $sizeCode,
                 'quantity' => (int) $row['quantity'],
             );
@@ -1091,7 +1233,7 @@ try {
         $userId = require_auth_user_id();
 
         $stmt = $pdo->prepare(
-            'SELECT c.slug AS category_key, p.product_code
+            'SELECT c.slug AS category_key, c.title AS category_title, p.product_code, p.name, p.price_cents, p.image_key
              FROM wishlist_items wi
              INNER JOIN products p ON p.id = wi.product_id
              INNER JOIN categories c ON c.id = p.category_id
@@ -1109,6 +1251,10 @@ try {
                 'key' => $categoryKey . ':' . $productCode,
                 'id' => $productCode,
                 'categoryKey' => $categoryKey,
+                'categoryTitle' => (string) $row['category_title'],
+                'name' => (string) $row['name'],
+                'priceCents' => (int) $row['price_cents'],
+                'imageKey' => (string) (isset($row['image_key']) ? $row['image_key'] : ''),
             );
         }
 
@@ -1160,6 +1306,242 @@ try {
         $stmt->execute(array($userId, $productId));
 
         json_response(array('ok' => true), 200);
+    }
+
+    if ($action === 'checkout_place_order' && $method === 'POST') {
+        ensure_user_item_tables($pdo);
+        ensure_order_tables($pdo);
+
+        $body = read_json_body();
+        $paymentMethod = normalize_payment_method(isset($body['paymentMethod']) ? $body['paymentMethod'] : '');
+        $email = isset($body['email']) ? trim((string) $body['email']) : '';
+        $firstName = isset($body['firstName']) ? trim((string) $body['firstName']) : '';
+        $lastName = isset($body['lastName']) ? trim((string) $body['lastName']) : '';
+        $street = isset($body['street']) ? trim((string) $body['street']) : '';
+        $city = isset($body['city']) ? trim((string) $body['city']) : '';
+        $postalCode = isset($body['postalCode']) ? trim((string) $body['postalCode']) : '';
+        $country = isset($body['country']) ? trim((string) $body['country']) : '';
+
+        if ($paymentMethod === null) {
+            error_response('Invalid payment method.', 400);
+        }
+
+        if ($email === '' || $firstName === '' || $lastName === '' || $street === '' || $city === '' || $postalCode === '' || $country === '') {
+            error_response('Checkout address and contact details are required.', 400);
+        }
+
+        if (!preg_match($emailRe, $email)) {
+            error_response('Invalid email format.', 400);
+        }
+
+        $userId = isset($_SESSION['user_id']) && is_numeric($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $checkoutItems = array();
+
+        if ($userId !== null) {
+            $stmt = $pdo->prepare(
+                'SELECT ci.product_id, ci.size_code, ci.quantity
+                 FROM cart_items ci
+                 WHERE ci.user_id = ?
+                 ORDER BY ci.id ASC'
+            );
+            $stmt->execute(array($userId));
+            $cartRows = $stmt->fetchAll();
+
+            foreach ($cartRows as $row) {
+                $checkoutItems[] = load_order_item_snapshot(
+                    $pdo,
+                    (int) $row['product_id'],
+                    (string) $row['size_code'],
+                    (int) $row['quantity']
+                );
+            }
+        } else {
+            $rawItems = isset($body['items']) && is_array($body['items']) ? $body['items'] : array();
+            foreach ($rawItems as $item) {
+                if (!is_array($item)) {
+                    error_response('Invalid checkout item payload.', 400);
+                }
+
+                $categoryKey = isset($item['categoryKey']) ? trim((string) $item['categoryKey']) : '';
+                $productCode = isset($item['productCode']) ? trim((string) $item['productCode']) : '';
+                $sizeCode = isset($item['size']) ? trim((string) $item['size']) : '';
+                $quantity = isset($item['quantity']) ? (int) $item['quantity'] : 0;
+
+                if ($categoryKey === '' || $productCode === '' || $sizeCode === '' || $quantity <= 0) {
+                    error_response('Invalid checkout item payload.', 400);
+                }
+
+                $productId = find_product_id($pdo, $categoryKey, $productCode);
+                if (!$productId) {
+                    error_response('Product not found.', 404);
+                }
+
+                $checkoutItems[] = load_order_item_snapshot($pdo, $productId, $sizeCode, $quantity);
+            }
+        }
+
+        if (count($checkoutItems) === 0) {
+            error_response('Your cart is empty.', 400);
+        }
+
+        $subtotalCents = 0;
+        foreach ($checkoutItems as $item) {
+            $subtotalCents += (int) $item['lineTotalCents'];
+        }
+
+        $shippingCents = 1199;
+        $totalCents = $subtotalCents + $shippingCents;
+        $orderNumber = generate_unique_order_number($pdo);
+        $guestLabel = $userId !== null ? '' : 'ANON-' . strtoupper(bin2hex(random_bytes(4)));
+
+        $pdo->beginTransaction();
+        try {
+            $insertOrder = $pdo->prepare(
+                'INSERT INTO orders (order_number, user_id, guest_label, email, first_name, last_name, street, city, country, postal_code, payment_method, currency, subtotal_cents, shipping_cents, total_cents, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $insertOrder->execute(array(
+                $orderNumber,
+                $userId,
+                $guestLabel,
+                $email,
+                $firstName,
+                $lastName,
+                $street,
+                $city,
+                $country,
+                $postalCode,
+                $paymentMethod,
+                'EUR',
+                $subtotalCents,
+                $shippingCents,
+                $totalCents,
+                'received',
+            ));
+
+            $orderId = (int) $pdo->lastInsertId();
+            $insertItem = $pdo->prepare(
+                'INSERT INTO order_items (order_id, product_id, product_code, category_key, category_title, product_name, image_key, size_code, unit_price_cents, quantity, line_total_cents)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+
+            foreach ($checkoutItems as $item) {
+                $insertItem->execute(array(
+                    $orderId,
+                    (int) $item['productId'],
+                    (string) $item['id'],
+                    (string) $item['categoryKey'],
+                    (string) $item['categoryTitle'],
+                    (string) $item['name'],
+                    (string) $item['imageKey'],
+                    (string) $item['size'],
+                    (int) $item['unitPriceCents'],
+                    (int) $item['quantity'],
+                    (int) $item['lineTotalCents'],
+                ));
+            }
+
+            if ($userId !== null) {
+                $clearCart = $pdo->prepare('DELETE FROM cart_items WHERE user_id = ?');
+                $clearCart->execute(array($userId));
+            }
+
+            $pdo->commit();
+
+            if ($userId !== null) {
+                $orderRow = array(
+                    'order_number' => $orderNumber,
+                    'created_at' => gmdate('Y-m-d H:i:s'),
+                    'status' => 'received',
+                    'payment_method' => $paymentMethod,
+                    'currency' => 'EUR',
+                    'subtotal_cents' => $subtotalCents,
+                    'shipping_cents' => $shippingCents,
+                    'total_cents' => $totalCents,
+                    'email' => $email,
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'street' => $street,
+                    'city' => $city,
+                    'postal_code' => $postalCode,
+                    'country' => $country,
+                );
+
+                json_response(array(
+                    'message' => 'Order placed successfully.',
+                    'order' => build_order_response($orderRow, $checkoutItems),
+                ), 200);
+            }
+
+            json_response(array(
+                'message' => 'Vaše objednávka byla přijata.',
+            ), 200);
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    if ($action === 'orders_get' && $method === 'GET') {
+        ensure_order_tables($pdo);
+        $userId = require_auth_user_id();
+
+        $stmt = $pdo->prepare(
+            'SELECT id, order_number, user_id, guest_label, email, first_name, last_name, street, city, country, postal_code, payment_method, currency, subtotal_cents, shipping_cents, total_cents, status, created_at
+             FROM orders
+             WHERE user_id = ?
+             ORDER BY created_at DESC, id DESC'
+        );
+        $stmt->execute(array($userId));
+        $orderRows = $stmt->fetchAll();
+
+        if (count($orderRows) === 0) {
+            json_response(array('orders' => array()), 200);
+        }
+
+        $orderIds = array();
+        foreach ($orderRows as $orderRow) {
+            $orderIds[] = (int) $orderRow['id'];
+        }
+
+        $itemsByOrderId = array();
+        $in = implode(',', array_map('intval', $orderIds));
+        $itemsStmt = $pdo->query(
+            'SELECT oi.order_id, oi.product_id, oi.product_code, oi.category_key, oi.category_title, oi.product_name, oi.image_key, oi.size_code, oi.unit_price_cents, oi.quantity, oi.line_total_cents
+             FROM order_items oi
+             WHERE oi.order_id IN (' . $in . ')
+             ORDER BY oi.id ASC'
+        );
+
+        foreach ($itemsStmt->fetchAll() as $row) {
+            $orderId = (int) $row['order_id'];
+            if (!isset($itemsByOrderId[$orderId])) {
+                $itemsByOrderId[$orderId] = array();
+            }
+
+            $itemsByOrderId[$orderId][] = array(
+                'productId' => isset($row['product_id']) ? (int) $row['product_id'] : 0,
+                'key' => (string) $row['category_key'] . ':' . (string) $row['product_code'] . ':' . (string) $row['size_code'],
+                'id' => (string) $row['product_code'],
+                'categoryKey' => (string) $row['category_key'],
+                'categoryTitle' => (string) $row['category_title'],
+                'name' => (string) $row['product_name'],
+                'imageKey' => (string) (isset($row['image_key']) ? $row['image_key'] : ''),
+                'size' => (string) $row['size_code'],
+                'quantity' => (int) $row['quantity'],
+                'unitPriceCents' => (int) $row['unit_price_cents'],
+                'lineTotalCents' => (int) $row['line_total_cents'],
+            );
+        }
+
+        $orders = array();
+        foreach ($orderRows as $orderRow) {
+            $orders[] = build_order_response($orderRow, isset($itemsByOrderId[(int) $orderRow['id']]) ? $itemsByOrderId[(int) $orderRow['id']] : array());
+        }
+
+        json_response(array('orders' => $orders), 200);
     }
 
     error_response('Invalid auth action.', 404);

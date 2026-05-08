@@ -5,6 +5,12 @@ import SEO from "@/components/SEO";
 import { getStoredUser } from "@/lib/auth";
 import { readOrders, type UserOrder } from "@/lib/orders";
 
+const paymentMethodLabel: Record<UserOrder["paymentMethod"], string> = {
+  bank_transfer: "Bank transfer",
+  credit_card: "Credit card",
+  cash_on_delivery: "Cash on delivery",
+};
+
 const OrdersPage = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<UserOrder[]>([]);
@@ -35,22 +41,27 @@ const OrdersPage = () => {
             {orders.map((order) => (
               <div key={order.id} className="border border-border p-4 md:p-5">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-                  <p className="text-sm">Order {order.id}</p>
+                  <div>
+                    <p className="text-sm">Order {order.orderNumber}</p>
+                    <p className="text-xs text-muted-foreground">{paymentMethodLabel[order.paymentMethod]}</p>
+                  </div>
                   <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleString()}</p>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4 mb-4 text-xs text-muted-foreground">
                   <div>
-                    <p className="text-foreground text-sm mb-1">Tracking</p>
-                    <p>Code: {order.trackingCode}</p>
                     <p>Status: {order.status}</p>
+                    <p>Subtotal: €{order.subtotal.toFixed(2)}</p>
+                    <p>Shipping: €{order.shipping.toFixed(2)}</p>
+                    <p>Total: €{order.total.toFixed(2)}</p>
                   </div>
                   <div>
                     <p className="text-foreground text-sm mb-1">Shipping Address</p>
-                    <p>{order.address.fullName}</p>
-                    <p>{order.address.line1}</p>
+                    <p>{order.address.firstName} {order.address.lastName}</p>
+                    <p>{order.address.street}</p>
                     <p>{order.address.postalCode} {order.address.city}</p>
                     <p>{order.address.country}</p>
+                    <p>{order.address.email}</p>
                   </div>
                 </div>
 
@@ -58,7 +69,7 @@ const OrdersPage = () => {
                   {order.items.map((item) => (
                     <div key={item.key} className="flex items-center justify-between gap-3 text-xs">
                       <span>{item.name} · {item.size} · Qty {item.quantity}</span>
-                      <span className="text-muted-foreground">{item.price}</span>
+                      <span className="text-muted-foreground">€{item.lineTotal.toFixed(2)}</span>
                     </div>
                   ))}
                 </div>

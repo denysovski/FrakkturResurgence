@@ -19,6 +19,8 @@ const emitCartUpdated = (items: CartItem[]) => {
   }
 };
 
+const GUEST_CART_KEY = "frakktur_cart_guest";
+
 const getAuthEndpoint = (action: string) => {
   const base = import.meta.env.BASE_URL || "/";
   const normalizedBase = base.endsWith("/") ? base : `${base}/`;
@@ -43,11 +45,7 @@ const cartRequest = async (action: string, method: "GET" | "POST", body?: unknow
 
 const getUserStorageKey = () => {
   const user = getStoredUser();
-  if (!user) {
-    throw new Error("Please sign in to use cart.");
-  }
-
-  return `frakktur_cart_${user.id}`;
+  return user ? `frakktur_cart_${user.id}` : GUEST_CART_KEY;
 };
 
 const readLocalCart = (): CartItem[] => {
@@ -78,7 +76,15 @@ const writeLocalCart = (items: CartItem[]) => {
   localStorage.setItem(key, JSON.stringify(items));
 };
 
+const isSignedIn = () => Boolean(getStoredUser());
+
 export const readCart = async (): Promise<CartItem[]> => {
+  if (!isSignedIn()) {
+    const guestItems = readLocalCart();
+    emitCartUpdated(guestItems);
+    return guestItems;
+  }
+
   const response = await cartRequest("cart_get", "GET");
   const rawItems = Array.isArray(response?.items) ? response.items : [];
 
@@ -139,7 +145,29 @@ export const readCart = async (): Promise<CartItem[]> => {
 };
 
 export const addToCart = async (item: Omit<CartItem, "key">) => {
-  getUserStorageKey();
+  if (!isSignedIn()) {
+    const current = readLocalCart();
+    const key = `${item.categoryKey}:${item.id}:${item.size}`;
+    const existingIndex = current.findIndex((currentItem) => currentItem.key === key);
+    const next = [...current];
+
+    if (existingIndex >= 0) {
+      next[existingIndex] = {
+        ...next[existingIndex],
+        quantity: next[existingIndex].quantity + item.quantity,
+      };
+    } else {
+      next.unshift({
+        ...item,
+        key,
+      });
+    }
+
+    writeLocalCart(next);
+    emitCartUpdated(next);
+    return next;
+  }
+
   await cartRequest("cart_add", "POST", {
     categoryKey: item.categoryKey,
     productCode: item.id,
@@ -155,18 +183,38 @@ export const updateCartQuantity = async (key: string, quantity: number): Promise
     return removeFromCart(key);
   }
 
-  getUserStorageKey();
+  if (!isSignedIn()) {
+    const next = readLocalCart()
+      .map((item) => (item.key === key ? { ...item, quantity } : item))
+      .filter((item) => item.quantity > 0);
+    writeLocalCart(next);
+    emitCartUpdated(next);
+    return next;
+  }
+
   await cartRequest("cart_update", "POST", { key, quantity });
   return readCart();
 };
 
 export const removeFromCart = async (key: string): Promise<CartItem[]> => {
-  getUserStorageKey();
+  if (!isSignedIn()) {
+    const next = readLocalCart().filter((item) => item.key !== key);
+    writeLocalCart(next);
+    emitCartUpdated(next);
+    return next;
+  }
+
   await cartRequest("cart_remove", "POST", { key });
   return readCart();
 };
 
 export const clearCart = async (): Promise<CartItem[]> => {
+  if (!isSignedIn()) {
+    writeLocalCart([]);
+    emitCartUpdated([]);
+    return [];
+  }
+
   const current = await readCart();
   for (const item of current) {
     await cartRequest("cart_remove", "POST", { key: item.key });

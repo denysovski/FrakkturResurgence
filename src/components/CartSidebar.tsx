@@ -145,7 +145,13 @@ export default function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
                   <span className="text-sm">Estimated Total:</span>
                   <span className="text-lg font-light">€{total.toFixed(2)}</span>
                 </div>
-                <button className="w-full bg-foreground text-background py-2 text-sm hover:opacity-90 transition-opacity">
+                <button
+                  onClick={() => {
+                    onOpenChange(false);
+                    navigate("/cart");
+                  }}
+                  className="w-full bg-foreground text-background py-2 text-sm hover:opacity-90 transition-opacity"
+                >
                   Checkout
                 </button>
                 <button

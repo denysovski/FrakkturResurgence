@@ -57,12 +57,13 @@ All error responses follow this format:
 
 ## Endpoints Summary
 
-**Total: 21 Endpoints**
+**Total: 23 Endpoints**
 
 - **Authentication (4):** register, login, logout, me
 - **Products (3):** products_by_category, product_get, search
 - **Shopping Cart (4):** cart_get, cart_add, cart_update, cart_remove
 - **Wishlist (3):** wishlist_get, wishlist_add, wishlist_remove
+- **Orders / Checkout (2):** checkout_place_order, orders_get
 - **Admin (7):** admin_options, admin_products_get, admin_product_save, admin_product_delete, admin_assets_list, admin_asset_upload, admin_asset_delete
 
 ---
@@ -212,23 +213,57 @@ All error responses follow this format:
 
 ---
 
+### Orders / Checkout Endpoints (2)
+
+#### 15. Place Order
+- **Method:** POST
+- **URL:** `/auth.php?action=checkout_place_order`
+- **Auth Required:** No
+- **Request Body:**
+  - `email` (string): Contact email
+  - `firstName` (string): Customer first name
+  - `lastName` (string): Customer last name
+  - `street` (string): Street address
+  - `city` (string): City
+  - `postalCode` (string): Postal code
+  - `country` (string): Country
+  - `paymentMethod` (string): `bank_transfer`, `credit_card`, or `cash_on_delivery`
+  - `items` (array): Required for guest checkout, containing cart items with `categoryKey`, `productCode`, `size`, `quantity`
+- **Behavior:**
+  - Logged-in users are checked out from the DB cart and the order is attached to their account.
+  - Guest users are saved as anonymous orders with a generated label.
+  - Shipping is a fixed `€11.99`.
+  - The order number is a unique 8-digit number.
+- **Response:**
+  - Logged-in: `200 OK` with `order` object and confirmation message
+  - Guest: `200 OK` with confirmation message only
+
+#### 16. Get Order History
+- **Method:** GET
+- **URL:** `/auth.php?action=orders_get`
+- **Auth Required:** Yes
+- **Response:** `200 OK` with `orders` array containing full order history, line items, shipping address, payment method, subtotal, shipping, and total
+- **Errors:** `401` if not signed in
+
+---
+
 ### Admin Endpoints (7)
 
-#### 15. Get Admin Options
+#### 17. Get Admin Options
 - **Method:** GET
 - **URL:** `/auth.php?action=admin_options`
 - **Auth Required:** Yes + Admin
 - **Response:** 200 OK with descriptions and sustainability options
 - **Errors:** 401 (not logged in), 403 (not admin)
 
-#### 16. Get All Admin Products
+#### 18. Get All Admin Products
 - **Method:** GET
 - **URL:** `/auth.php?action=admin_products_get`
 - **Auth Required:** Yes + Admin
 - **Response:** 200 OK with all products including stock details
 - **Errors:** 401 (not logged in), 403 (not admin)
 
-#### 17. Save/Update Admin Product
+#### 19. Save/Update Admin Product
 - **Method:** POST
 - **URL:** `/auth.php?action=admin_product_save`
 - **Auth Required:** Yes + Admin
@@ -247,7 +282,7 @@ All error responses follow this format:
 - **Response:** 200 OK with product ID and code
 - **Errors:** 400 (validation), 401 (not logged in), 403 (not admin)
 
-#### 18. Delete Admin Product
+#### 20. Delete Admin Product
 - **Method:** POST
 - **URL:** `/auth.php?action=admin_product_delete`
 - **Auth Required:** Yes + Admin
@@ -256,7 +291,7 @@ All error responses follow this format:
 - **Response:** 200 OK
 - **Errors:** 400 (missing id), 401 (not logged in), 403 (not admin)
 
-#### 19. Get Admin Assets List
+#### 21. Get Admin Assets List
 - **Method:** GET
 - **URL:** `/auth.php?action=admin_assets_list&category={categoryKey|all}`
 - **Auth Required:** Yes + Admin
@@ -265,7 +300,7 @@ All error responses follow this format:
 - **Response:** 200 OK with array of asset objects
 - **Errors:** 401 (not logged in), 403 (not admin)
 
-#### 20. Upload Admin Asset
+#### 22. Upload Admin Asset
 - **Method:** POST
 - **URL:** `/auth.php?action=admin_asset_upload`
 - **Auth Required:** Yes + Admin
@@ -275,7 +310,7 @@ All error responses follow this format:
 - **Response:** 200 OK with imageKey
 - **Errors:** 400 (validation), 401 (not logged in), 403 (not admin), 500 (upload error)
 
-#### 21. Delete Admin Asset
+#### 23. Delete Admin Asset
 - **Method:** POST
 - **URL:** `/auth.php?action=admin_asset_delete`
 - **Auth Required:** Yes + Admin
@@ -336,6 +371,6 @@ The React frontend integrates via dedicated client libraries:
 
 ---
 
-**Total Endpoints:** 21
+**Total Endpoints:** 23
 **Last Updated:** 2025
 **Version:** 1.0.0

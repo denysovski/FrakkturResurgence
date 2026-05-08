@@ -1,62 +1,72 @@
 import type { CartItem } from "@/lib/cart";
 import { getStoredUser } from "@/lib/auth";
+import type { CategoryKey } from "@/lib/catalog";
+import { resolveImageUrl } from "@/lib/productsApi";
 
 export type ShippingAddress = {
-  fullName: string;
-  line1: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  street: string;
   city: string;
   postalCode: string;
   country: string;
 };
 
-export type OrderItem = CartItem;
+export type CheckoutPaymentMethod = "bank_transfer" | "credit_card" | "cash_on_delivery";
+
+export type OrderItem = {
+  key: string;
+  id: string;
+  categoryKey: CategoryKey;
+  categoryTitle: string;
+  name: string;
+  image: string;
+  size: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+};
 
 export type UserOrder = {
   id: string;
+  orderNumber: string;
   createdAt: string;
-  status: "processing" | "shipped" | "delivered";
-  trackingCode: string;
+  status: "received" | "processing" | "paid" | "shipped" | "delivered" | "cancelled";
+  paymentMethod: CheckoutPaymentMethod;
   currency: "EUR";
+  subtotal: number;
+  shipping: number;
   total: number;
   address: ShippingAddress;
   items: OrderItem[];
 };
 
-const getOrdersStorageKey = () => {
-  const user = getStoredUser();
-  if (!user) {
-    throw new Error("Please sign in to view orders.");
-  }
-
-  return `frakktur_orders_${user.id}`;
+type CheckoutResult = {
+  message: string;
+  order?: UserOrder;
 };
 
-const readLocalOrders = (): UserOrder[] => {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  const key = getOrdersStorageKey();
-  const raw = localStorage.getItem(key);
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as UserOrder[]) : [];
-  } catch {
-    return [];
-  }
+const getOrdersEndpoint = () => {
+  const base = import.meta.env.BASE_URL || "/";
+  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+  return `${normalizedBase}auth.php`;
 };
 
-const writeLocalOrders = (orders: UserOrder[]) => {
-  if (typeof window === "undefined") {
-    return;
+const orderRequest = async (action: string, method: "GET" | "POST", body?: unknown) => {
+  const response = await fetch(`${getOrdersEndpoint()}?action=${action}`, {
+    method,
+    credentials: "include",
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(typeof data?.error === "string" ? data.error : `Request failed (${response.status})`);
   }
 
-  const key = getOrdersStorageKey();
-  localStorage.setItem(key, JSON.stringify(orders));
+  return data;
 };
 
 const emitOrdersUpdated = (orders: UserOrder[]) => {
@@ -65,48 +75,104 @@ const emitOrdersUpdated = (orders: UserOrder[]) => {
   }
 };
 
-const parsePrice = (price: string) => {
-  const value = Number.parseFloat(price.replace(/[^\d.]/g, ""));
-  return Number.isNaN(value) ? 0 : value;
-};
+const centsToEuros = (cents: number) => Number((cents / 100).toFixed(2));
 
-const createTrackingCode = () => {
-  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `FRK-${random}`;
-};
+const formatOrderItem = (item: {
+  key: string;
+  id: string;
+  categoryKey: CategoryKey;
+  categoryTitle: string;
+  name: string;
+  imageKey?: string;
+  size: string;
+  quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
+}): OrderItem => ({
+  key: item.key,
+  id: item.id,
+  categoryKey: item.categoryKey,
+  categoryTitle: item.categoryTitle,
+  name: item.name,
+  image: item.imageKey ? resolveImageUrl(item.imageKey, item.categoryKey, item.id) : "",
+  size: item.size,
+  quantity: item.quantity,
+  unitPrice: centsToEuros(item.unitPriceCents),
+  lineTotal: centsToEuros(item.lineTotalCents),
+});
 
-const createOrderId = () => {
-  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `ORD-${Date.now()}-${random}`;
-};
+const formatOrder = (order: {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+  status: UserOrder["status"];
+  paymentMethod: CheckoutPaymentMethod;
+  currency: "EUR";
+  subtotalCents: number;
+  shippingCents: number;
+  totalCents: number;
+  address: ShippingAddress;
+  items: Array<Parameters<typeof formatOrderItem>[0]>;
+}): UserOrder => ({
+  id: order.orderNumber,
+  orderNumber: order.orderNumber,
+  createdAt: order.createdAt,
+  status: order.status,
+  paymentMethod: order.paymentMethod,
+  currency: order.currency,
+  subtotal: centsToEuros(order.subtotalCents),
+  shipping: centsToEuros(order.shippingCents),
+  total: centsToEuros(order.totalCents),
+  address: order.address,
+  items: order.items.map(formatOrderItem),
+});
 
 export const readOrders = async (): Promise<UserOrder[]> => {
-  const orders = readLocalOrders().sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  if (!getStoredUser()) {
+    throw new Error("Please sign in to view orders.");
+  }
+
+  const response = await orderRequest("orders_get", "GET");
+  const rawOrders = Array.isArray(response?.orders) ? response.orders : [];
+  const orders = rawOrders.map(formatOrder).sort((a: UserOrder, b: UserOrder) => +new Date(b.createdAt) - +new Date(a.createdAt));
   emitOrdersUpdated(orders);
   return orders;
 };
 
-export const createOrderFromCart = async (params: { items: CartItem[]; address: ShippingAddress }) => {
+export const createOrderFromCart = async (params: {
+  items: CartItem[];
+  address: ShippingAddress;
+  paymentMethod: CheckoutPaymentMethod;
+}): Promise<CheckoutResult> => {
   if (!params.items.length) {
     throw new Error("Your cart is empty.");
   }
 
-  const total = params.items.reduce((sum, item) => sum + parsePrice(item.price) * item.quantity, 0);
+  const response = await orderRequest("checkout_place_order", "POST", {
+    email: params.address.email,
+    firstName: params.address.firstName,
+    lastName: params.address.lastName,
+    street: params.address.street,
+    city: params.address.city,
+    postalCode: params.address.postalCode,
+    country: params.address.country,
+    paymentMethod: params.paymentMethod,
+    items: params.items.map((item) => ({
+      categoryKey: item.categoryKey,
+      productCode: item.id,
+      size: item.size,
+      quantity: item.quantity,
+    })),
+  });
 
-  const nextOrder: UserOrder = {
-    id: createOrderId(),
-    createdAt: new Date().toISOString(),
-    status: "processing",
-    trackingCode: createTrackingCode(),
-    currency: "EUR",
-    total,
-    address: params.address,
-    items: params.items,
+  if (response?.order) {
+    return {
+      message: typeof response.message === "string" ? response.message : "Order placed successfully.",
+      order: formatOrder(response.order),
+    };
+  }
+
+  return {
+    message: typeof response?.message === "string" ? response.message : "Vaše objednávka byla přijata.",
   };
-
-  const current = readLocalOrders();
-  const next = [nextOrder, ...current];
-  writeLocalOrders(next);
-  emitOrdersUpdated(next);
-  return nextOrder;
 };
