@@ -263,7 +263,7 @@ export default function Sections({
             Register, earn points & rewards on all purchases. Redeem exclusive offers and discounts.
           </p>
           <a
-            href="#"
+            href="/club"
             className="inline-flex items-center gap-2 mt-6 text-sm uppercase tracking-[0.12em] underline underline-offset-4 hover:opacity-70 transition-opacity"
           >
             Sign up

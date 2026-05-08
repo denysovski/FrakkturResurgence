@@ -154,3 +154,28 @@ export const fetchCurrentUser = async (options?: { force?: boolean }) => {
 
   return meInFlight;
 };
+
+/**
+ * Initialize authentication on app load.
+ * Checks if stored user is still valid with server.
+ * If localStorage has user but server doesn't recognize them, clears localStorage.
+ */
+export const initializeAuth = async () => {
+  const storedUser = getStoredUser();
+  
+  if (!storedUser) {
+    return null; // No stored user, nothing to verify
+  }
+  
+  try {
+    // Try to verify with server
+    const user = await fetchCurrentUser({ force: true });
+    return user;
+  } catch {
+    // Server says user is not valid, clear localStorage
+    setStoredUser(null);
+    meCache = null;
+    window.dispatchEvent(new CustomEvent("frakktur:auth-updated", { detail: null }));
+    return null;
+  }
+};
