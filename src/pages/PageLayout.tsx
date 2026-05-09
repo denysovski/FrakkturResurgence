@@ -1,7 +1,9 @@
-import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Sections from "@/components/Sections";
 import Footer from "@/components/Footer";
+import { useCurrency } from "@/lib/currencyContext";
+import { useI18n } from "@/lib/i18nContext";
+import type { Language } from "@/lib/i18n";
 
 const countryOptions = [
   { value: "GREAT BRITAIN", flag: "https://flagcdn.com/w40/gb.png" },
@@ -13,7 +15,26 @@ const countryOptions = [
   { value: "CHINA", flag: "https://flagcdn.com/w40/cn.png" },
 ];
 
-const currencyOptions = ["GBP", "USD", "CZK", "EUR", "EUR", "JPY", "CNY"];
+const currencyOptions = ["EUR", "CZK", "USD", "JPY", "CNY"];
+
+const countryToLanguageMap: Record<string, Language> = {
+  "GREAT BRITAIN": "en",
+  "UNITED STATES": "en",
+  "CZECHIA": "cs",
+  "SLOVAKIA": "sk",
+  "GERMANY": "de",
+  "JAPAN": "ja",
+  "CHINA": "zh",
+};
+
+const languageToCountryMap: Record<Language, string> = {
+  en: "GREAT BRITAIN",
+  cs: "CZECHIA",
+  sk: "SLOVAKIA",
+  de: "GERMANY",
+  ja: "JAPAN",
+  zh: "CHINA",
+};
 
 interface PageLayoutProps {
   children: React.ReactNode;
@@ -22,8 +43,9 @@ interface PageLayoutProps {
 }
 
 const PageLayout = ({ children, showSections = false, forceBlackNavbar = false }: PageLayoutProps) => {
-  const [selectedCountry, setSelectedCountry] = useState(countryOptions[0].value);
-  const [selectedCurrency, setSelectedCurrency] = useState(currencyOptions[0]);
+  const { language, setLanguage } = useI18n();
+  const { currency, setCurrency } = useCurrency();
+  const selectedCountry = languageToCountryMap[language];
 
   return (
     <div className="min-h-screen bg-background">
@@ -31,33 +53,19 @@ const PageLayout = ({ children, showSections = false, forceBlackNavbar = false }
         countryOptions={countryOptions}
         currencyOptions={currencyOptions}
         selectedCountry={selectedCountry}
-        selectedCurrency={selectedCurrency}
-        onCountryChange={setSelectedCountry}
-        onCurrencyChange={setSelectedCurrency}
+        selectedCurrency={currency}
+        onCountryChange={(country) => setLanguage(countryToLanguageMap[country] || "en")}
+        onCurrencyChange={setCurrency}
         forceBlackText={forceBlackNavbar}
       />
       
       {children}
       
       {showSections ? (
-        <Sections
-          countryOptions={countryOptions}
-          currencyOptions={currencyOptions}
-          selectedCountry={selectedCountry}
-          selectedCurrency={selectedCurrency}
-          onCountryChange={setSelectedCountry}
-          onCurrencyChange={setSelectedCurrency}
-        />
-      ) : (
-        <Footer
-          countryOptions={countryOptions}
-          currencyOptions={currencyOptions}
-          selectedCountry={selectedCountry}
-          selectedCurrency={selectedCurrency}
-          onCountryChange={setSelectedCountry}
-          onCurrencyChange={setSelectedCurrency}
-        />
-      )}
+        <Sections />
+      ) : null}
+
+      <Footer />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { getLanguageFromCookie, setLanguageCookie, type Language, LANGUAGE_OPTIONS, getT } from "@/lib/i18n";
 
 type I18nContextType = {
@@ -14,12 +14,6 @@ export const I18nProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window === "undefined") return "en";
     return getLanguageFromCookie();
   });
-  
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
@@ -27,10 +21,6 @@ export const I18nProvider = ({ children }: { children: ReactNode }) => {
     // Dispatch event for other components to react to language change
     window.dispatchEvent(new CustomEvent("frakktur:language-changed", { detail: lang }));
   };
-
-  if (!mounted) {
-    return <>{children}</>;
-  }
 
   return (
     <I18nContext.Provider value={{ language, setLanguage, t: getT(language) }}>

@@ -148,7 +148,10 @@ export const createOrderFromCart = async (params: {
     throw new Error("Your cart is empty.");
   }
 
+  const currentUser = getStoredUser();
+
   const response = await orderRequest("checkout_place_order", "POST", {
+    checkoutMode: currentUser ? "user" : "guest",
     email: params.address.email,
     firstName: params.address.firstName,
     lastName: params.address.lastName,

@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronRight, Filter, Sparkles, TrendingUp, Star, DollarSign, ChevronDown, Grid2x2, Grid3x3, Type, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import type { CategoryKey } from "@/lib/catalog";
 import SEO from "@/components/SEO";
 import { addToWishlist } from "@/lib/wishlist";
@@ -8,6 +9,9 @@ import { getStoredUser, type AuthUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { fetchProductByCategoryAndId, fetchProductsByCategory } from "@/lib/productsApi";
 import { getCollectionImageByIndex } from "@/lib/collectionImages";
+import { useCurrency } from "@/lib/currencyContext";
+import { useI18n } from "@/lib/i18nContext";
+import { formatLocalizedPrice } from "@/lib/price";
 
 interface CollectionProduct {
   id: string;
@@ -27,11 +31,6 @@ interface CollectionPageProps {
 
 const ITEMS_PER_PAGE = 12;
 
-const parsePriceValue = (price: string) => {
-  const numeric = Number.parseFloat(price.replace(/[^\d.]/g, ""));
-  return Number.isNaN(numeric) ? 0 : numeric;
-};
-
 const CollectionPage = ({
   categoryKey,
   title,
@@ -39,6 +38,8 @@ const CollectionPage = ({
   products = [],
   itemsPerPage = ITEMS_PER_PAGE,
 }: CollectionPageProps) => {
+  const { currency } = useCurrency();
+  const { t } = useI18n();
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState("newest");
   const [gridCols, setGridCols] = useState(4);
@@ -47,6 +48,8 @@ const CollectionPage = ({
   const [liveProducts, setLiveProducts] = useState<CollectionProduct[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const sortButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [sortMenuStyle, setSortMenuStyle] = useState<React.CSSProperties>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -121,9 +124,9 @@ const CollectionPage = ({
         case "newest":
           return b.index - a.index;
         case "price-asc":
-          return parsePriceValue(a.product.price) - parsePriceValue(b.product.price);
+          return Number.parseFloat(a.product.price.replace(/[^\d.]/g, "")) - Number.parseFloat(b.product.price.replace(/[^\d.]/g, ""));
         case "price-desc":
-          return parsePriceValue(b.product.price) - parsePriceValue(a.product.price);
+          return Number.parseFloat(b.product.price.replace(/[^\d.]/g, "")) - Number.parseFloat(a.product.price.replace(/[^\d.]/g, ""));
         default:
           return 0;
       }
@@ -165,6 +168,42 @@ const CollectionPage = ({
     }
   };
 
+  useEffect(() => {
+    if (!sortMenuOpen || typeof window === "undefined") {
+      return;
+    }
+
+    const updatePosition = () => {
+      const rect = sortButtonRef.current?.getBoundingClientRect();
+      if (!rect) {
+        return;
+      }
+
+      const width = 192;
+      const right = Math.max(16, window.innerWidth - rect.right);
+      const left = Math.max(16, window.innerWidth - right - width);
+      const maxTop = window.innerHeight - 16 - 260;
+      const top = Math.min(rect.bottom + 8, Math.max(16, maxTop));
+
+      setSortMenuStyle({
+        position: "fixed",
+        top,
+        right,
+        width,
+        zIndex: 40,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition);
+    };
+  }, [sortMenuOpen]);
+
   return (
     <div className="pt-24 pb-16 px-6 md:px-10">
       <SEO
@@ -203,18 +242,19 @@ const CollectionPage = ({
           </div>
         </div>
 
-        <div className="relative z-[140] animate-fade-in-up-2">
+        <div className="relative z-[400] animate-fade-in-up-2">
           <button
+            ref={sortButtonRef}
             onClick={() => setSortMenuOpen(!sortMenuOpen)}
             className="flex items-center gap-2 px-4 py-2 border border-border hover:bg-secondary transition-colors rounded-sm text-sm"
           >
             <Filter className="w-4 h-4" />
-            <span>Sort: {sortBy === "alphabetical" ? "A-Z" : sortBy === "popular" ? "Popular" : sortBy === "newest" ? "Newest" : sortBy === "price-asc" ? "Price ↑" : "Price ↓"}</span>
+            <span>{t.common.sort}: {sortBy === "alphabetical" ? "A-Z" : sortBy === "popular" ? "Popular" : sortBy === "newest" ? "Newest" : sortBy === "price-asc" ? "Price ↑" : "Price ↓"}</span>
             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${sortMenuOpen ? "rotate-180" : ""}`} />
           </button>
 
-          {sortMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-border shadow-lg z-[220] rounded-sm overflow-hidden">
+          {sortMenuOpen && typeof window !== "undefined" && createPortal(
+            <div style={sortMenuStyle} className="bg-background border border-border shadow-lg rounded-sm overflow-hidden">
               <button
                 onClick={() => {
                   setSortBy("newest");
@@ -266,13 +306,14 @@ const CollectionPage = ({
                 <DollarSign className="w-4 h-4" /> Price: High to Low
               </button>
             </div>
+            , document.body
           )}
         </div>
       </div>
 
       {/* Product Grid */}
       {isLoadingProducts ? (
-        <div className="text-sm text-muted-foreground mb-16">Loading products...</div>
+        <div className="text-sm text-muted-foreground mb-16">{t.common.loading}</div>
       ) : (
       <div className={`relative z-0 grid gap-6 md:gap-8 mb-16 ${
         gridCols === 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3"
@@ -334,20 +375,7 @@ const CollectionPage = ({
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
-              <p className="text-sm text-muted-foreground mb-3">{product.price}</p>
-
-              {product.sizes.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {product.sizes.map((size) => (
-                    <span
-                      key={size}
-                      className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-foreground px-2 text-[10px] font-medium uppercase tracking-[0.15em] text-background"
-                    >
-                      {size}
-                    </span>
-                  ))}
-                </div>
-              )}
+              <p className="text-sm text-muted-foreground mb-3">{formatLocalizedPrice(product.price, currency)}</p>
 
             </button>
 
@@ -357,7 +385,7 @@ const CollectionPage = ({
                 onClick={() => void handleAddToWishlist(product.id, product.name)}
                 className="mt-2 text-xs underline underline-offset-4 hover:opacity-70 transition-opacity"
               >
-                Add to wishlist
+                {t.product.addToWishlist}
               </button>
             )}
           </div>

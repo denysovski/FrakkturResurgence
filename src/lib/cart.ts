@@ -20,6 +20,7 @@ const emitCartUpdated = (items: CartItem[]) => {
 };
 
 const GUEST_CART_KEY = "frakktur_cart_guest";
+const LEGACY_GUEST_CART_KEYS = ["frakktur_cart"];
 
 const getAuthEndpoint = (action: string) => {
   const base = import.meta.env.BASE_URL || "/";
@@ -48,13 +49,7 @@ const getUserStorageKey = () => {
   return user ? `frakktur_cart_${user.id}` : GUEST_CART_KEY;
 };
 
-const readLocalCart = (): CartItem[] => {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  const key = getUserStorageKey();
-  const raw = localStorage.getItem(key);
+const parseCartPayload = (raw: string | null): CartItem[] => {
   if (!raw) {
     return [];
   }
@@ -65,6 +60,32 @@ const readLocalCart = (): CartItem[] => {
   } catch {
     return [];
   }
+};
+
+const readLocalCart = (): CartItem[] => {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const key = getUserStorageKey();
+  const primaryItems = parseCartPayload(localStorage.getItem(key));
+  if (primaryItems.length > 0) {
+    return primaryItems;
+  }
+
+  // Backward compatibility for older guest-cart key naming.
+  if (key === GUEST_CART_KEY) {
+    for (const legacyKey of LEGACY_GUEST_CART_KEYS) {
+      const legacyItems = parseCartPayload(localStorage.getItem(legacyKey));
+      if (legacyItems.length > 0) {
+        localStorage.setItem(GUEST_CART_KEY, JSON.stringify(legacyItems));
+        localStorage.removeItem(legacyKey);
+        return legacyItems;
+      }
+    }
+  }
+
+  return [];
 };
 
 const writeLocalCart = (items: CartItem[]) => {

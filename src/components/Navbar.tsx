@@ -8,32 +8,12 @@ import { getStoredUser, logoutUser, type AuthUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { getAllProducts, type CategoryKey } from "@/lib/catalog";
 import { fetchProductsByCategory } from "@/lib/productsApi";
-import { useI18n, LANGUAGE_OPTIONS } from "@/lib/i18nContext";
-import { useCurrency, CURRENCY_OPTIONS } from "@/lib/currencyContext";
-import type { Language } from "@/lib/i18n";
+import { useCurrency } from "@/lib/currencyContext";
+import type { Currency } from "@/lib/currency";
 
 import logoInvert from "@/assets/frakktur-icon-invert.png";
 
-// Map country values to language codes
-const countryToLanguageMap: Record<string, Language> = {
-  "GREAT BRITAIN": "en",
-  "UNITED STATES": "en",
-  "CZECHIA": "cs",
-  "SLOVAKIA": "sk",
-  "GERMANY": "de",
-  "JAPAN": "ja",
-  "CHINA": "zh",
-};
-
-// Map language codes to language options
-const languageToCountryMap: Record<Language, string> = {
-  en: "GREAT BRITAIN",
-  cs: "CZECHIA",
-  sk: "SLOVAKIA",
-  de: "GERMANY",
-  ja: "JAPAN",
-  zh: "CHINA",
-};
+const supportedCurrencies: Currency[] = ["EUR", "CZK", "SKK", "USD", "JPY", "CNY"];
 
 const primaryMenuLinks = [
   { label: "T-shirts", href: "/collections/tshirts" },
@@ -81,7 +61,6 @@ export default function Navbar({
   onCurrencyChange,
   forceBlackText = false,
 }: NavbarProps) {
-  const { language, setLanguage } = useI18n();
   const { currency, setCurrency } = useCurrency();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -254,7 +233,7 @@ export default function Navbar({
   };
 
   const navHasBackground = scrolled || dropdownOpen || userMenuOpen;
-  const navItemColor = forceBlackText ? "text-foreground" : (navHasBackground ? "text-foreground" : "text-primary-foreground");
+  const navItemColor = "text-foreground";
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const nicknameRaw = (currentUser?.fullName || "there").trim();
   const nickname = nicknameRaw.length > 20 ? `${nicknameRaw.slice(0, 20)}...` : nicknameRaw;
@@ -275,7 +254,7 @@ export default function Navbar({
       <header
         className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
           visible ? "top-0" : "-top-20"
-        } ${forceBlackText || navHasBackground ? "bg-background/95 backdrop-blur-sm shadow-sm" : "bg-transparent"}`}
+        } bg-white/95 backdrop-blur-sm shadow-sm`}
         style={{ overflow: "visible" }}
       >
         <div className="flex items-center justify-between px-6 py-4" style={{ overflow: "visible" }}>
@@ -291,34 +270,21 @@ export default function Navbar({
             <img
               src={logoInvert}
               alt="Frakktur"
-              className={`h-8 md:h-9 w-auto transition-all duration-300 ${forceBlackText || navHasBackground ? "invert" : ""}`}
+              className="h-8 md:h-9 w-auto transition-all duration-300"
+              style={{ filter: "brightness(0) saturate(100%)" }}
             />
           </Link>
 
           <div className={`flex items-center gap-4 ${navItemColor}`}>
             <div className="relative hidden sm:flex items-center gap-2">
               <LocaleDropdown
-                type="country"
-                options={countryOptions}
-                selected={languageToCountryMap[language]}
-                onChange={(country) => {
-                  const lang = countryToLanguageMap[country];
-                  if (lang) {
-                    setLanguage(lang);
-                  }
-                  onCountryChange(country);
-                }}
-                onOpenChange={setDropdownOpen}
-              />
-            </div>
-
-            <div className="relative hidden sm:flex items-center gap-2">
-              <LocaleDropdown
                 type="currency"
                 options={currencyOptions}
                 selected={currency}
                 onChange={(curr) => {
-                  setCurrency(curr as any);
+                  if (supportedCurrencies.includes(curr as Currency)) {
+                    setCurrency(curr as Currency);
+                  }
                   onCurrencyChange(curr);
                 }}
                 onOpenChange={setDropdownOpen}

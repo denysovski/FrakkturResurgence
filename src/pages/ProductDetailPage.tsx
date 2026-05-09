@@ -13,6 +13,8 @@ import { fetchProductByCategoryAndId, fetchProductsByCategory, getCachedProducts
 import { addToWishlist } from "@/lib/wishlist";
 import { getStoredUser, type AuthUser } from "@/lib/auth";
 import { getCollectionImageByIndex } from "@/lib/collectionImages";
+import { useCurrency } from "@/lib/currencyContext";
+import { formatLocalizedPrice } from "@/lib/price";
 
 const CATEGORY_SIZE_OPTIONS: Record<string, string[]> = {
   tshirts: ["XS", "S", "M", "L", "XL", "XXL"],
@@ -39,6 +41,7 @@ const ProductDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { currency } = useCurrency();
 
   const safeCategory = categoryKey as CategoryKey | undefined;
   const category = safeCategory ? getCategoryData(safeCategory) : null;
@@ -182,6 +185,74 @@ const ProductDetailPage = () => {
       image: product.image,
     });
   }, [product, safeCategory]);
+
+  const getSizeChartForCategory = (cat?: CategoryKey) => {
+    if (!cat) return {
+      headers: ["Size", "Chest", "Length", "Shoulder"],
+      rows: [
+        ["XS", "50 cm", "66 cm", "42 cm"],
+        ["S", "53 cm", "69 cm", "44 cm"],
+        ["M", "56 cm", "72 cm", "46 cm"],
+        ["L", "59 cm", "75 cm", "48 cm"],
+        ["XL", "62 cm", "78 cm", "50 cm"],
+      ],
+    };
+
+    if (UNIVERSAL_SIZE_CATEGORIES.has(cat)) {
+      // provide compact charts for caps and belts instead of returning null
+      if (cat === "caps") {
+        return {
+          headers: ["Size", "Head (cm)", "Hat size"],
+          rows: [
+            ["S", "54–55", "6 3/4 - 6 7/8"],
+            ["M", "56–57", "7 - 7 1/8"],
+            ["L", "58–59", "7 1/4 - 7 3/8"],
+            ["XL", "60–61", "7 1/2 - 7 5/8"],
+          ],
+        };
+      }
+
+      if (cat === "belts") {
+        return {
+          headers: ["Size", "Waist (cm)", "Waist (in)"],
+          rows: [
+            ["XS", "70–75", "27–29"],
+            ["S", "76–81", "30–32"],
+            ["M", "82–87", "32–34"],
+            ["L", "88–93", "35–36"],
+            ["XL", "94–99", "37–39"],
+          ],
+        };
+      }
+    }
+
+    if (cat === "pants") {
+      return {
+        headers: ["Size", "Waist", "Hips", "Inseam"],
+        rows: [
+          ["XS", "70 cm", "90 cm", "74 cm"],
+          ["S", "74 cm", "94 cm", "75 cm"],
+          ["M", "78 cm", "98 cm", "76 cm"],
+          ["L", "82 cm", "102 cm", "77 cm"],
+          ["XL", "86 cm", "106 cm", "78 cm"],
+          ["XXL", "90 cm", "110 cm", "79 cm"],
+        ],
+      };
+    }
+
+    // default: shirts, hoodies, knitwear, leather jackets
+    return {
+      headers: ["Size", "Chest", "Length", "Shoulder"],
+      rows: [
+        ["XS", "50 cm", "66 cm", "42 cm"],
+        ["S", "53 cm", "69 cm", "44 cm"],
+        ["M", "56 cm", "72 cm", "46 cm"],
+        ["L", "59 cm", "75 cm", "48 cm"],
+        ["XL", "62 cm", "78 cm", "50 cm"],
+        ["XXL", "65 cm", "81 cm", "52 cm"],
+      ],
+    };
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -334,7 +405,7 @@ const ProductDetailPage = () => {
         <div className="hidden lg:grid lg:grid-cols-2 lg:gap-16 max-w-7xl mx-auto px-10 py-20">
           {/* Image column - left side */}
           <div className="flex items-start justify-center lg:sticky lg:top-32 h-fit">
-            <div className="w-full aspect-square bg-secondary rounded-sm overflow-hidden flex items-center justify-center animate-fade-in-image">
+            <div className="w-full aspect-square bg-secondary rounded-[45px] overflow-hidden flex items-center justify-center animate-fade-in-image">
               <img
                 src={productImage}
                 alt={`${product?.name || "Product"} - Premium luxury streetwear`}
@@ -347,7 +418,7 @@ const ProductDetailPage = () => {
           {/* Content column - right side */}
           <div className="pt-0">
             <h1 className="text-4xl font-light tracking-tight mb-2 animate-fade-in-up">{product.name}</h1>
-            <p className="text-xl text-muted-foreground mb-8 animate-fade-in-up-1">{product.price}</p>
+            <p className="text-xl text-muted-foreground mb-8 animate-fade-in-up-1">{formatLocalizedPrice(product.price, currency)}</p>
 
             {!isUniversalProduct && (
             <div className="mb-8 animate-fade-in-up-2">
@@ -466,7 +537,7 @@ const ProductDetailPage = () => {
         <div className="hidden md:grid md:grid-cols-2 md:gap-8 lg:hidden max-w-5xl mx-auto px-6 py-16">
           {/* Image column */}
           <div className="flex items-start justify-center md:sticky md:top-32 h-fit">
-            <div className="w-full aspect-square bg-secondary rounded-sm overflow-hidden flex items-center justify-center animate-fade-in-image">
+            <div className="w-full aspect-square bg-secondary rounded-[45px] overflow-hidden flex items-center justify-center animate-fade-in-image">
               <img src={productImage} alt={product.name} onError={() => setImageError(true)} className="w-full h-full object-contain p-6" />
             </div>
           </div>
@@ -474,7 +545,7 @@ const ProductDetailPage = () => {
           {/* Content column */}
           <div>
             <h1 className="text-3xl font-light tracking-tight mb-2 animate-fade-in-up">{product.name}</h1>
-            <p className="text-lg text-muted-foreground mb-6 animate-fade-in-up-1">{product.price}</p>
+            <p className="text-lg text-muted-foreground mb-6 animate-fade-in-up-1">{formatLocalizedPrice(product.price, currency)}</p>
 
             {!isUniversalProduct && (
             <div className="mb-6 animate-fade-in-up-2">
@@ -504,13 +575,15 @@ const ProductDetailPage = () => {
             </div>
             )}
 
-            <button
-              type="button"
-              onClick={() => setIsSizeChartOpen(true)}
-              className="text-sm underline underline-offset-4 mb-6 animate-fade-in-up-2"
-            >
-              Size chart
-            </button>
+            {!UNIVERSAL_SIZE_CATEGORIES.has(safeCategory) && (
+              <button
+                type="button"
+                onClick={() => setIsSizeChartOpen(true)}
+                className="text-sm underline underline-offset-4 mb-6 animate-fade-in-up-2"
+              >
+                Size chart
+              </button>
+            )}
 
             <div className="space-y-3 mb-6 text-sm leading-relaxed text-muted-foreground animate-fade-in-up-3">
               <p>
@@ -591,11 +664,11 @@ const ProductDetailPage = () => {
 
         {/* Mobile: Stacked layout */}
         <div className="md:hidden px-6 py-12 max-w-md mx-auto">
-          <div className="flex items-center justify-center animate-fade-in-image rounded-sm mb-8 overflow-hidden bg-secondary aspect-square">
+          <div className="flex items-center justify-center animate-fade-in-image rounded-[45px] mb-8 overflow-hidden bg-secondary aspect-square">
             <img src={productImage} alt={product.name} onError={() => setImageError(true)} className="w-full h-full object-contain p-6" />
           </div>
           <h1 className="text-2xl font-light tracking-tight mb-2 animate-fade-in-up">{product.name}</h1>
-          <p className="text-lg text-muted-foreground mb-6 animate-fade-in-up-1">{product.price}</p>
+          <p className="text-lg text-muted-foreground mb-6 animate-fade-in-up-1">{formatLocalizedPrice(product.price, currency)}</p>
 
           {!isUniversalProduct && (
           <div className="mb-6 animate-fade-in-up-2">
@@ -625,13 +698,15 @@ const ProductDetailPage = () => {
           </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => setIsSizeChartOpen(true)}
-            className="text-sm underline underline-offset-4 mb-6 animate-fade-in-up-2"
-          >
-            Size chart
-          </button>
+          {!UNIVERSAL_SIZE_CATEGORIES.has(safeCategory) && (
+            <button
+              type="button"
+              onClick={() => setIsSizeChartOpen(true)}
+              className="text-sm underline underline-offset-4 mb-6 animate-fade-in-up-2"
+            >
+              Size chart
+            </button>
+          )}
 
           <div className="space-y-3 mb-6 text-sm leading-relaxed text-muted-foreground animate-fade-in-up-3">
             <p>
@@ -722,7 +797,7 @@ const ProductDetailPage = () => {
                     <img src={item.image} alt={item.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   </div>
                   <p className="text-xs leading-tight">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">{item.price}</p>
+                  <p className="text-xs text-muted-foreground">{formatLocalizedPrice(item.price, currency)}</p>
                 </button>
               ))}
             </div>
@@ -746,7 +821,7 @@ const ProductDetailPage = () => {
                   <img src={item.image} alt={item.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
                 <p className="text-sm leading-tight group-hover:opacity-70 transition-opacity">{item.name}</p>
-                <p className="text-xs text-muted-foreground">{item.price}</p>
+                <p className="text-xs text-muted-foreground">{formatLocalizedPrice(item.price, currency)}</p>
               </button>
             ))}
           </div>
@@ -772,46 +847,53 @@ const ProductDetailPage = () => {
                   />
                 </div>
                 <p className="text-sm leading-tight group-hover:opacity-70 transition-opacity">{item.name}</p>
-                <p className="text-xs text-muted-foreground">{item.price}</p>
+                <p className="text-xs text-muted-foreground">{formatLocalizedPrice(item.price, currency)}</p>
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      <Sheet open={isSizeChartOpen} onOpenChange={setIsSizeChartOpen}>
-        <SheetContent side="right" className="w-[90vw] sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Size chart</SheetTitle>
-          </SheetHeader>
+      {(() => {
+        const chart = getSizeChartForCategory(safeCategory);
+        if (!chart) return null;
 
-          <div className="mt-6">
-            <p className="text-sm text-muted-foreground mb-4">Exact size scheme for {product.name}.</p>
-            <div className="border border-border">
-              <div className="grid grid-cols-4 text-xs uppercase tracking-[0.12em] border-b border-border">
-                <div className="p-2">Size</div>
-                <div className="p-2">Chest</div>
-                <div className="p-2">Length</div>
-                <div className="p-2">Shoulder</div>
-              </div>
-              {[
-                ["XS", "50 cm", "66 cm", "42 cm"],
-                ["S", "53 cm", "69 cm", "44 cm"],
-                ["M", "56 cm", "72 cm", "46 cm"],
-                ["L", "59 cm", "75 cm", "48 cm"],
-                ["XL", "62 cm", "78 cm", "50 cm"],
-              ].map((row) => (
-                <div key={row[0]} className="grid grid-cols-4 text-sm border-b border-border last:border-b-0">
-                  <div className="p-2">{row[0]}</div>
-                  <div className="p-2">{row[1]}</div>
-                  <div className="p-2">{row[2]}</div>
-                  <div className="p-2">{row[3]}</div>
+        return (
+          <Sheet open={isSizeChartOpen} onOpenChange={setIsSizeChartOpen}>
+            <SheetContent side="right" className="w-[90vw] sm:max-w-md">
+              <SheetHeader>
+                <SheetTitle>Size chart</SheetTitle>
+              </SheetHeader>
+
+              <div className="mt-4 px-4 pb-6">
+                <p className="text-sm text-muted-foreground mb-3">Exact size scheme for {product?.name}.</p>
+
+                <div className="max-w-sm mx-auto border border-border rounded-md overflow-hidden">
+                  <div className="bg-muted/50 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${chart.headers.length}, minmax(0, 1fr))` }}>
+                      {chart.headers.map((h) => (
+                        <div key={h} className="p-2 text-center">{h}</div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="max-h-[55vh] overflow-auto text-sm">
+                    {chart.rows.map((row) => (
+                      <div key={row[0]} className="border-t border-border">
+                        <div style={{ display: "grid", gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))` }} className="p-2">
+                          {row.map((cell, i) => (
+                            <div key={i} className="text-center text-sm">{cell}</div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+              </div>
+            </SheetContent>
+          </Sheet>
+        );
+      })()}
     </PageLayout>
   );
 };

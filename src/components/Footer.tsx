@@ -1,30 +1,8 @@
 import { useNavigate, Link } from "react-router-dom";
 import { Facebook, Instagram, Music2, Send } from "lucide-react";
-import LocaleDropdown from "@/components/LocaleDropdown";
 import { getStoredUser } from "@/lib/auth";
 
-interface CountryOption {
-  value: string;
-  flag: string;
-}
-
-interface FooterProps {
-  countryOptions: CountryOption[];
-  currencyOptions: string[];
-  selectedCountry: string;
-  selectedCurrency: string;
-  onCountryChange: (country: string) => void;
-  onCurrencyChange: (currency: string) => void;
-}
-
-const Footer = ({
-  countryOptions,
-  currencyOptions,
-  selectedCountry,
-  selectedCurrency,
-  onCountryChange,
-  onCurrencyChange,
-}: FooterProps) => {
+const Footer = () => {
   const navigate = useNavigate();
   const handleMyOrdersClick = () => {
     const user = getStoredUser();
@@ -127,24 +105,7 @@ const Footer = ({
       </div>
 
       <div className="mt-10 pt-6 border-t border-border flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <LocaleDropdown
-            type="country"
-            options={countryOptions}
-            selected={selectedCountry}
-            onChange={onCountryChange}
-            position="top"
-            align="left"
-          />
-          <LocaleDropdown
-            type="currency"
-            options={currencyOptions}
-            selected={selectedCurrency}
-            onChange={onCurrencyChange}
-            position="top"
-            align="left"
-          />
-        </div>
+        <div />
 
         <div className="flex items-center gap-5 ml-auto">
           <a

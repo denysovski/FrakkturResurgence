@@ -1334,29 +1334,27 @@ try {
             error_response('Invalid email format.', 400);
         }
 
-        $userId = isset($_SESSION['user_id']) && is_numeric($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-        $checkoutItems = array();
+        $checkoutMode = isset($body['checkoutMode']) ? trim((string) $body['checkoutMode']) : '';
+        $sessionUserId = isset($_SESSION['user_id']) && is_numeric($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $userId = null;
 
-        if ($userId !== null) {
-            $stmt = $pdo->prepare(
-                'SELECT ci.product_id, ci.size_code, ci.quantity
-                 FROM cart_items ci
-                 WHERE ci.user_id = ?
-                 ORDER BY ci.id ASC'
-            );
-            $stmt->execute(array($userId));
-            $cartRows = $stmt->fetchAll();
-
-            foreach ($cartRows as $row) {
-                $checkoutItems[] = load_order_item_snapshot(
-                    $pdo,
-                    (int) $row['product_id'],
-                    (string) $row['size_code'],
-                    (int) $row['quantity']
-                );
+        if ($checkoutMode === 'guest') {
+            $userId = null;
+        } else if ($checkoutMode === 'user') {
+            if ($sessionUserId === null) {
+                error_response('Session expired. Please sign in again.', 401);
             }
+            $userId = $sessionUserId;
         } else {
-            $rawItems = isset($body['items']) && is_array($body['items']) ? $body['items'] : array();
+            // Backward-compatible fallback when older clients do not send checkoutMode.
+            $userId = $sessionUserId;
+        }
+        $checkoutItems = array();
+        $rawItems = isset($body['items']) && is_array($body['items']) ? $body['items'] : array();
+
+        // Prefer explicit payload items when present. This prevents stale session cart
+        // reads from overriding a guest/local cart checkout request.
+        if (count($rawItems) > 0) {
             foreach ($rawItems as $item) {
                 if (!is_array($item)) {
                     error_response('Invalid checkout item payload.', 400);
@@ -1377,6 +1375,24 @@ try {
                 }
 
                 $checkoutItems[] = load_order_item_snapshot($pdo, $productId, $sizeCode, $quantity);
+            }
+        } else if ($userId !== null) {
+            $stmt = $pdo->prepare(
+                'SELECT ci.product_id, ci.size_code, ci.quantity
+                 FROM cart_items ci
+                 WHERE ci.user_id = ?
+                 ORDER BY ci.id ASC'
+            );
+            $stmt->execute(array($userId));
+            $cartRows = $stmt->fetchAll();
+
+            foreach ($cartRows as $row) {
+                $checkoutItems[] = load_order_item_snapshot(
+                    $pdo,
+                    (int) $row['product_id'],
+                    (string) $row['size_code'],
+                    (int) $row['quantity']
+                );
             }
         }
 
